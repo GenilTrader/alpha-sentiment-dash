@@ -32,11 +32,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE RELATÓRIOS BILÍNGUE</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE RELATÓRIOS MULTI-GRAPH</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Suporte a Múltiplos Prints Dinâmicos e Relatórios Bilíngues independentes</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SIDEBAR DE INPUTS (Carregado com os dados reais do seu print da GEX)
+# SIDEBAR DE INPUTS
 # -----------------------------------------------------------------------------
 st.sidebar.header("🎛️ Parâmetros do Pré-Mercado")
 data_hoje = st.sidebar.text_input("Data da Sessão", pd.Timestamp.now().strftime("%d/%m/%Y"))
@@ -64,26 +64,37 @@ col_text, col_graph = st.columns(2)
 
 with col_text:
     st.subheader("📝 Diretrizes Ocultas (Claude Engine)")
-    st.caption("Cole o texto gerado pela nova Skill Internacional do Claude (com as marcações [PT] e [EN]):")
-    analise_texto = st.text_area("Boletim Proprietário", height=380, placeholder="1. ARQUITETURA DE REGIMES DE PREÇO...\n[PT] O Vetor USTEC...\n[EN] The USTEC Vector...")
+    st.caption("Cole o texto gerado pela Skill Internacional do Claude (com as marcas [PT] e [EN]):")
+    analise_texto = st.text_area("Boletim Proprietário", height=420, placeholder="1. ARQUITETURA DE REGIMES DE PREÇO...\n[PT] O Vetor USTEC...\n[EN] The USTEC Vector...")
 
 with col_graph:
-    st.subheader("🖼️ Mapeamento Gráfico do Vetor")
-    st.caption("Anexe o print limpo com as suas linhas manuais plotadas:")
-    uploaded_file = st.file_uploader("Arrastar imagem do gráfico aqui", type=["png", "jpg", "jpeg"])
+    st.subheader("🖼️ Galeria de Prints e Mapeamentos")
+    st.caption("Selecione ou arraste múltiplos arquivos de imagem ao mesmo tempo:")
     
-    anotacao_grafico_pt = "Regiões táticas identificadas através do cruzamento das Fronteiras Alfa/Ômega e Vetores de Arbitragem."
-    anotacao_grafico_en = "Tactical zones identified through the intersection of Alpha/Omega Frontiers and Arbitrage Vectors."
+    # MUDANÇA PRINCIPAL: accept_multiple_files=True ativado para múltiplos gráficos
+    uploaded_files = st.file_uploader("Arrastar múltiplos prints gráficos aqui", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     
-    if uploaded_file:
-        st.image(uploaded_file, caption="Mapeamento Estrutural Carregado", use_container_width=True)
-        anotacao_grafico_pt = st.text_input("📌 Legenda do Gráfico (Português):", anotacao_grafico_pt)
-        anotacao_grafico_en = st.text_input("📌 Legenda do Gráfico (Inglês):", anotacao_grafico_en)
+    legendas_pt = []
+    legendas_en = []
+    
+    if uploaded_files:
+        st.info(f"📁 {len(uploaded_files)} imagens carregadas para processamento sequencial.")
+        for idx, file in enumerate(uploaded_files):
+            st.image(file, caption=f"Imagem {idx+1}: {file.name}", use_container_width=True)
+            
+            # Cria caixas de legenda individuais para cada foto anexada
+            c_l1, c_l2 = st.columns(2)
+            with c_l1:
+                leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
+                legendas_pt.append(leg_pt)
+            with c_l2:
+                leg_en = st.text_input(f"📌 Legenda Imagem {idx+1} (EN):", f"Technical structural map tracking - Layout {idx+1}.", key=f"en_leg_{idx}")
+                legendas_en.append(leg_en)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF COM SUPORTE A MÚLTIPLAS IMAGENS
 # -----------------------------------------------------------------------------
-def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, v_macro, legenda_img):
+def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, v_macro, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
@@ -91,13 +102,13 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     style_sub = ParagraphStyle('Sub', parent=styles['Normal'], fontName='Helvetica', fontSize=10, textColor=colors.HexColor('#64748B'), spaceAfter=15)
     style_h2 = ParagraphStyle('H2', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#D4AF37'), spaceBefore=14, spaceAfter=6)
     style_body = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=14, textColor=colors.HexColor('#334155'), spaceAfter=5)
-    style_caption = ParagraphStyle('Caption', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=8, textColor=colors.HexColor('#64748B'), alignment=1, spaceBefore=4)
+    style_caption = ParagraphStyle('Caption', parent=styles['Normal'], fontName='Helvetica-Oblique', fontSize=8, textColor=colors.HexColor('#64748B'), alignment=1, spaceBefore=4, spaceAfter=10)
     
     elements = []
     elements.append(Paragraph(titulo, style_h1))
     elements.append(Paragraph(f"{sub_titulo} — Date/Data: {data_hoje}", style_sub))
     
-    # Tabela com tradução limpa das colunas
+    # Tabela de Ajustes
     elements.append(Paragraph("🎯 ARQUITETURA DE REGIMES DE PREÇO / PRICE REGIME", style_h2))
     table_data = [
         [Paragraph(f"<b>{label_ativo}</b>", style_body), Paragraph(f"<b>{label_ajuste}</b>", style_body), Paragraph(f"<b>{label_zce}</b>", style_body), Paragraph(f"<b>{label_zae}</b>", style_body), Paragraph(f"<b>{label_er}</b>", style_body)],
@@ -105,7 +116,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), us500_spot, us500_zce, us500_zae, us500_er]
     ]
     
-    prop_table = Table(table_data, colWidths=[110, 95, 105, 105, 105])
+    prop_table = Table(table_data, colWidths=)
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -121,7 +132,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     label_macro = "Filtro de Pressão Sistêmica Global" if lang == "PT" else "Global Systemic Pressure Filter"
     elements.append(Paragraph(f"<b>{label_macro}:</b> {v_macro}", style_body))
     
-    # Filtro Inteligente do Bloco de Texto correspondente ao Idioma
+    # Extração Textual
     elements.append(Paragraph("📝 DIRETRIZES TÁTICAS OPERACIONAIS / OPERATIONAL THESES", style_h2))
     linhas = analise_texto.split('\n')
     bloco_valido = False
@@ -139,25 +150,29 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
             texto_adicionado = True
             
     if not texto_adicionado:
-        # Se não houver tags de separação, joga o texto inteiro na caixa
         for l in linhas:
             if l.strip() and not l.strip().startswith("["):
                 elements.append(Paragraph(l, style_body))
                 
-    # Gráfico
-    if uploaded_file:
-        elements.append(Paragraph("🖼️ VISUALIZAÇÃO E ESTRUTURAÇÃO DO MAPA", style_h2))
-        temp_img_path = f"temp_chart_{lang}.png"
-        img = Image.open(uploaded_file)
-        img.save(temp_img_path)
+    # Loops para anexar MÚLTIPLAS IMAGENS sequencialmente no PDF
+    if uploaded_files:
+        elements.append(Paragraph("🖼️ VISUALIZAÇÃO E ESTRUTURAÇÃO DO MAPA VISUAL", style_h2))
+        for idx, file in enumerate(uploaded_files):
+            temp_img_path = f"temp_chart_{lang}_{idx}.png"
+            img = Image.open(file)
+            img.save(temp_img_path)
+            
+            max_width = 500
+            w, h = img.size
+            aspect = h / w
+            
+            elements.append(RLImage(temp_img_path, width=max_width, height=max_width * aspect))
+            # Garante a injeção da legenda correspondente daquela imagem
+            legenda_atual = lista_legendas[idx] if idx < len(lista_legendas) else ""
+            elements.append(Paragraph(f"<b>Figura {idx+1}:</b> {legenda_atual}", style_caption))
+            elements.append(Spacer(1, 5))
         
-        max_width = 520
-        w, h = img.size
-        aspect = h / w
-        elements.append(RLImage(temp_img_path, width=max_width, height=max_width * aspect))
-        elements.append(Paragraph(f"<b>Figura 1:</b> {legenda_img}", style_caption))
-        
-    # Aviso de Direitos Autorais
+    # Cláusula de Confidencialidade
     elements.append(Spacer(1, 15))
     aviso_text = "PROPRIEDADE INTELECTUAL RETIDA — DISTRIBUIÇÃO PROIBIDA EXTRA ASSINANTES" if lang == "PT" else "PROPRIETARY INTELLECTUAL PROPERTY — UNAUTHORIZED DISTRIBUTION IS STRICTLY PROHIBITED"
     style_aviso = ParagraphStyle('Aviso', parent=styles['Normal'], fontName='Helvetica-BoldOblique', fontSize=7.5, textColor=colors.HexColor('#94A3B8'), alignment=1)
@@ -166,11 +181,4 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# BOTÕES DE EXECUÇÃO E PROCESSAMENTO
-# -----------------------------------------------------------------------------
-st.markdown("---")
-if st.button("🔥 PROCESSAR COMPILAÇÃO DOS BOLETIMS ALFA (PT & EN)", use_container_width=True):
-    # Compila a versão em Português
-    compilar_pdf("boletim_alfa_PT.pdf", "PT", "GENILTRADER — BOLETIM ALFA", "Estudo Proprietário Pré-Mercado — Sessão de NY", "Ativo Analisado", "Ajuste Inicial", "Z-CE (Teto)", "Z-AE (Chão)", "ER (Eixo Rotação)", vetor_macro_pt, anotacao_grafico_pt)
-    
-    # Compila a versão em Inglês
+# BOTÕES DE EXECUÇÃO
