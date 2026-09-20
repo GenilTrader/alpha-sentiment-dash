@@ -5,7 +5,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from PIL import Image
-import io
 import os
 
 # Configuração da Interface Web (Estética Premium Dark)
@@ -77,32 +76,17 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     elements.append(Paragraph(f"<b>{label_macro}:</b> {v_macro}", style_body))
     
     elements.append(Paragraph("📝 DIRETRIZES TÁTICAS OPERACIONAIS / OPERATIONAL THESES", style_h2))
-    linhas = analise_text.split('\n')
-    bloco_valido = False
-    texto_adicionado = False
     
+    # TRATAMENTO DE TEXTO SEGURO: Joga todas as linhas válidas para dentro do PDF sem travar
+    linhas = analise_text.split('\n')
     for l in linhas:
-        if f"[{lang}]" in l:
-            bloco_valido = True
-            continue
-        if l.strip().startswith("[") and f"[{lang}]" not in l:
-            bloco_valido = False
-            
-        if bloco_valido and l.strip():
+        if l.strip() and not l.strip().startswith("[PT]") and not l.strip().startswith("[EN]"):
             elements.append(Paragraph(l, style_body))
-            texto_adicionado = True
-            
-    if not texto_adicionado:
-        for l in linhas:
-            if l.strip() and not l.strip().startswith("["):
-                elements.append(Paragraph(l, style_body))
                 
     if up_files:
         elements.append(Paragraph("🖼️ VISUALIZAÇÃO E ESTRUTURAÇÃO DO MAPA VISUAL", style_h2))
         for idx, file in enumerate(up_files):
             temp_img_path = f"temp_chart_{lang}_{idx}.png"
-            
-            # COMPRESSÃO ATIVADA: Reduz o tamanho físico na memória para não estourar o servidor gratuito
             img = Image.open(file)
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
@@ -135,13 +119,15 @@ st.sidebar.markdown("---")
 bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
 st.sidebar.markdown("---")
 
-# MUDANÇA CIRÚRGICA: Os botões de download só aparecem se os arquivos físicos existirem de verdade no disco do servidor
-if os.path.exists("boletim_alfa_PT.pdf") and os.path.exists("boletim_alfa_EN.pdf"):
+# Os botões de download aparecem de forma estável na barra lateral esquerda assim que gerados
+if os.path.exists("boletim_alfa_PT.pdf") or os.path.exists("boletim_alfa_EN.pdf"):
     st.sidebar.subheader("📥 Downloads Disponibilizados")
-    with open("boletim_alfa_PT.pdf", "rb") as f_pt:
-        st.sidebar.download_button("📥 BOLETIM EM PORTUGUÊS [PDF]", data=f_pt, file_name=f"Boletim_Alfa_PT_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
-    with open("boletim_alfa_EN.pdf", "rb") as f_en:
-        st.sidebar.download_button("📥 DOWNLOAD ENGLISH VERSION [PDF]", data=f_en, file_name=f"Alpha_Sentiment_EN_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    if os.path.exists("boletim_alfa_PT.pdf"):
+        with open("boletim_alfa_PT.pdf", "rb") as f_pt:
+            st.sidebar.download_button("📥 BOLETIM EM PORTUGUÊS [PDF]", data=f_pt, file_name=f"Boletim_Alfa_PT_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    if os.path.exists("boletim_alfa_EN.pdf"):
+        with open("boletim_alfa_EN.pdf", "rb") as f_en:
+            st.sidebar.download_button("📥 DOWNLOAD ENGLISH VERSION [PDF]", data=f_en, file_name=f"Alpha_Sentiment_EN_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
     st.sidebar.markdown("---")
 
 st.sidebar.subheader("🎯 Níveis Canal USTEC (QQQ)")
@@ -167,9 +153,20 @@ col_text, col_graph = st.columns(2)
 
 with col_text:
     st.subheader("📝 Diretrizes Ocultas (Claude Engine)")
-    st.caption("Cole o texto gerado pela Skill Internacional do Claude (com as marcas [PT] e [EN]):")
-    analise_texto = st.text_area("Boletim Proprietário", height=450, placeholder="1. ARQUITETURA DE REGIMES DE PREÇO...\n[PT] O Vetor USTEC...\n[EN] The USTEC Vector...")
+    st.caption("Cole o texto gerado pela sua análise:")
+    analise_texto = st.text_area("Boletim Proprietário", height=450, placeholder="Digite ou cole as diretrizes táticas operacionais aqui...")
 
 with col_graph:
     st.subheader("🖼️ Galeria de Prints e Mapeamentos")
     st.caption("Selecione ou arraste múltiplos arquivos de imagem ao mesmo tempo:")
+    uploaded_files = st.file_uploader("Arrastar múltiplos prints gráficos aqui", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    
+    legendas_pt = []
+    legendas_en = []
+    
+    if uploaded_files:
+        st.info(f"📁 {len(uploaded_files)} imagens prontas para compilação.")
+        for idx, file in enumerate(uploaded_files):
+            c_l1, c_l2 = st.columns(2)
+            with c_l1:
+                leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
