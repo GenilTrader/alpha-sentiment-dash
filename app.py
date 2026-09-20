@@ -10,6 +10,10 @@ import os
 # Configuração da Interface Web (Estética Premium Dark)
 st.set_page_config(page_title="GenilTrader — Engine de Relatórios", layout="wide")
 
+# Inicialização da Memória de Estado (Garante que os botões não sumam)
+if "boletins_gerados" not in st.session_state:
+    st.session_state.boletins_gerados = False
+
 # Customização CSS Avançada
 st.markdown("""
     <style>
@@ -60,7 +64,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), s_spot, s_zce, s_zae, s_er]
     ]
     
-    prop_table = Table(table_data, colWidths=[110, 95, 95, 95, 105])
+    prop_table = Table(table_data, colWidths=[110, 100, 100, 100, 110])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -120,7 +124,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# SIDEBAR DE INPUTS (Apenas Parâmetros)
+# SIDEBAR DE INPUTS
 # -----------------------------------------------------------------------------
 st.sidebar.header("🎛️ Parâmetros do Pré-Mercado")
 data_hoje = st.sidebar.text_input("Data da Sessão", pd.Timestamp.now().strftime("%d/%m/%Y"))
@@ -172,8 +176,7 @@ with st.form(key="engine_form_sandbox"):
                     legendas_en.append(leg_en)
 
     st.markdown("---")
-    # O Botão Dourado de Envio do Formulário Centralizado e Travado contra carregamentos contínuos
     bt_processar = st.form_submit_button(label="🔥 COMPILAR E EMITIR BOLETIMS INTERNACIONAIS [PDF]")
 
 # -----------------------------------------------------------------------------
-# ZONA DE DOWNLOAD POST-PROCESSAMENTO
+# ZONA DE MEMÓRIA E DOWNLOAD (À prova de desaparecimento)
