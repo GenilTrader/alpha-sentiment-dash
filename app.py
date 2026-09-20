@@ -85,7 +85,7 @@ if st.button("🔥 Compilar e Emitir Boletim Alfa [Acesso Restrito]", use_contai
     elements.append(Paragraph("GENILTRADER — BOLETIM ALFA EXCLUSIVO", style_h1))
     elements.append(Paragraph(f"Estudo Proprietário Pré-Mercado — Sessão de Nova York — Data: {data_hoje}", style_sub))
     
-    # Matriz Proprietária de Preço (Antigo GEX Table)
+    # Matriz Proprietária de Preço (Tabela Corrigida com Colunas Definidas de 100 pontos)
     elements.append(Paragraph("🎯 ARQUITETURA DE REGIMES DE PREÇO INTERNO", style_h2))
     table_data = [
         [Paragraph("<b>Ativo Analisado</b>", style_body), Paragraph("<b>Ajuste Inicial</b>", style_body), Paragraph("<b>Z-CE (Teto)</b>", style_body), Paragraph("<b>Z-AE (Chão)</b>", style_body), Paragraph("<b>Eixo de Rotação (ER)</b>", style_body)],
@@ -93,7 +93,7 @@ if st.button("🔥 Compilar e Emitir Boletim Alfa [Acesso Restrito]", use_contai
         [Paragraph("<b>Vetor US500</b> (S&P 500)", style_body), us500_spot, us500_zce, us500_zae, us500_er]
     ]
     
-    prop_table = Table(table_data, colWidths=)
+    prop_table = Table(table_data, colWidths=[120, 100, 100, 100, 110])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -152,4 +152,3 @@ if st.button("🔥 Compilar e Emitir Boletim Alfa [Acesso Restrito]", use_contai
             use_container_width=True
         )
     st.success("Boletim Alfa compilado com sucesso! Clique no botão acima para baixar.")
-
