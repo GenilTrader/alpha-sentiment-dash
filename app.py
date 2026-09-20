@@ -37,7 +37,7 @@ st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE REL
 st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF (Largura de Colunas Travada e Corrigida)
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, data_h, u_spot, u_zce, u_zae, u_er, s_spot, s_zce, s_zae, s_er, v_macro, analise_text, up_files, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
@@ -60,7 +60,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), s_spot, s_zce, s_zae, s_er]
     ]
     
-    # CORREÇÃO CRUCIAL DA LINHA TRAVADA: 5 colunas fixas de 106.4 pontos (Indestrutível)
     prop_table = Table(table_data, colWidths=[106.4, 106.4, 106.4, 106.4, 106.4])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
@@ -78,7 +77,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     
     elements.append(Paragraph("📝 DIRETRIZES TÁTICAS OPERACIONAIS / OPERATIONAL THESES", style_h2))
     
-    # Processamento de texto livre sem travas de tags complexas
     linhas = analise_text.split('\n')
     for l in linhas:
         if l.strip() and not l.strip().startswith("[PT]") and not l.strip().startswith("[EN]"):
@@ -120,7 +118,6 @@ st.sidebar.markdown("---")
 bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
 st.sidebar.markdown("---")
 
-# Os botões de download aparecem de forma estável na barra lateral esquerda assim que gerados
 if os.path.exists("boletim_alfa_PT.pdf") or os.path.exists("boletim_alfa_EN.pdf"):
     st.sidebar.subheader("📥 Downloads Disponibilizados")
     if os.path.exists("boletim_alfa_PT.pdf"):
@@ -138,17 +135,17 @@ ustec_zae  = st.sidebar.text_input("Z-AE (Zona de Absorção)", "$700.00")
 ustec_er   = st.sidebar.text_input("ER (Eixo de Rotação)", "$718.40")
 
 st.sidebar.subheader("🎯 Níveis Canal US500 (SPY)")
-us500_spot = st.sidebar.text_input("Preço de Referência Base", "$5,720")
-us500_zce  = st.sidebar.text_input("Z-CE (Zona de Contração)", "$5,760")
-us500_zae  = st.sidebar.text_input("Z-AE (Zona de Absorção)", "$5,680")
-us500_er   = st.sidebar.text_input("ER (Eixo de Rotação)", "$5,710")
+us500_spot = st.sidebar.text_input("Preço de Referência Base", "$762.33")
+us500_zce  = st.sidebar.text_input("Z-CE (Zona de Contração)", "$767.00")
+us500_zae  = st.sidebar.text_input("Z-AE (Zona de Absorção)", "$760.00")
+us500_er   = st.sidebar.text_input("ER (Eixo de Rotação)", "$763.54")
 
 st.sidebar.subheader("📺 Vetor Macroeconômico")
 vetor_macro_pt = st.sidebar.selectbox("Filtro de Pressão (PT)", ["Regime de Neutralidade / Lateral", "Pressão Vendedora Ativa", "Pressão Compradora Ativa"])
 vetor_macro_en = "Neutral Regime / Lateral" if "Neutralidade" in vetor_macro_pt else ("Active Selling Pressure" if "Vendedora" in vetor_macro_pt else "Active Buying Pressure")
 
 # -----------------------------------------------------------------------------
-# CORPO PRINCIPAL DE INSERÇÃO DE DADOS
+# CORPO PRINCIPAL DE INSERÇÃO DE DADOS (Estrutura Segura sem blocos 'with' de indentação)
 # -----------------------------------------------------------------------------
 col_text, col_graph = st.columns(2)
 
@@ -168,5 +165,7 @@ with col_graph:
     if uploaded_files:
         st.info(f"📁 {len(uploaded_files)} imagens prontas para compilação.")
         for idx, file in enumerate(uploaded_files):
-            c_l1, c_l2 = st.columns(2)
-            with c_l1:
+            # Layout de linha simples e plano para blindar contra erros de recuo invisíveis
+            leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
+            legendas_pt.append(leg_pt)
+            
