@@ -71,7 +71,6 @@ with col_graph:
     st.subheader("🖼️ Galeria de Prints e Mapeamentos")
     st.caption("Selecione ou arraste múltiplos arquivos de imagem ao mesmo tempo:")
     
-    # MUDANÇA PRINCIPAL: accept_multiple_files=True ativado para múltiplos gráficos
     uploaded_files = st.file_uploader("Arrastar múltiplos prints gráficos aqui", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
     
     legendas_pt = []
@@ -82,7 +81,6 @@ with col_graph:
         for idx, file in enumerate(uploaded_files):
             st.image(file, caption=f"Imagem {idx+1}: {file.name}", use_container_width=True)
             
-            # Cria caixas de legenda individuais para cada foto anexada
             c_l1, c_l2 = st.columns(2)
             with c_l1:
                 leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
@@ -92,7 +90,7 @@ with col_graph:
                 legendas_en.append(leg_en)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF COM SUPORTE A MÚLTIPLAS IMAGENS
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF COM AS MARGENS E COLUNAS TRAVADAS
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, v_macro, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
@@ -108,7 +106,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     elements.append(Paragraph(titulo, style_h1))
     elements.append(Paragraph(f"{sub_titulo} — Date/Data: {data_hoje}", style_sub))
     
-    # Tabela de Ajustes
+    # Tabela com larguras explicitamente declaradas para evitar erros de sintaxe
     elements.append(Paragraph("🎯 ARQUITETURA DE REGIMES DE PREÇO / PRICE REGIME", style_h2))
     table_data = [
         [Paragraph(f"<b>{label_ativo}</b>", style_body), Paragraph(f"<b>{label_ajuste}</b>", style_body), Paragraph(f"<b>{label_zce}</b>", style_body), Paragraph(f"<b>{label_zae}</b>", style_body), Paragraph(f"<b>{label_er}</b>", style_body)],
@@ -116,7 +114,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), us500_spot, us500_zce, us500_zae, us500_er]
     ]
     
-    prop_table = Table(table_data, colWidths=)
+    prop_table = Table(table_data, colWidths=[110, 100, 100, 100, 110])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -154,7 +152,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
             if l.strip() and not l.strip().startswith("["):
                 elements.append(Paragraph(l, style_body))
                 
-    # Loops para anexar MÚLTIPLAS IMAGENS sequencialmente no PDF
+    # Loops para anexar MÚLTIPLAS IMAGENS
     if uploaded_files:
         elements.append(Paragraph("🖼️ VISUALIZAÇÃO E ESTRUTURAÇÃO DO MAPA VISUAL", style_h2))
         for idx, file in enumerate(uploaded_files):
@@ -167,7 +165,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
             aspect = h / w
             
             elements.append(RLImage(temp_img_path, width=max_width, height=max_width * aspect))
-            # Garante a injeção da legenda correspondente daquela imagem
             legenda_atual = lista_legendas[idx] if idx < len(lista_legendas) else ""
             elements.append(Paragraph(f"<b>Figura {idx+1}:</b> {legenda_atual}", style_caption))
             elements.append(Spacer(1, 5))
@@ -182,3 +179,5 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
 
 # -----------------------------------------------------------------------------
 # BOTÕES DE EXECUÇÃO
+# -----------------------------------------------------------------------------
+st.markdown("---")
