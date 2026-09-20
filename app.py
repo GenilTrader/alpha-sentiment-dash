@@ -10,11 +10,7 @@ import os
 # Configuração da Interface Web (Estética Premium Dark)
 st.set_page_config(page_title="GenilTrader — Engine de Relatórios", layout="wide")
 
-# Inicialização da Memória de Estado (Garante que os botões não sumam)
-if "boletins_gerados" not in st.session_state:
-    st.session_state.boletins_gerados = False
-
-# Customização CSS Avançada
+# Customização CSS Avançada (Garante contraste absoluto e visual de mesa proprietária)
 st.markdown("""
     <style>
     .main-title { font-size:32px; font-weight:bold; color:#D4AF37; margin-bottom:5px; font-family:'Helvetica Neue', sans-serif; }
@@ -41,10 +37,9 @@ st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE REL
 st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF (Métrica de Margem Calibrada em 106.4 pontos)
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, data_h, u_spot, u_zce, u_zae, u_er, s_spot, s_zce, s_zae, s_er, v_macro, analise_text, up_files, lista_legendas):
-    # Total disponível na folha: 612 largura - 80 margens = 532 de área útil
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
@@ -65,7 +60,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), s_spot, s_zce, s_zae, s_er]
     ]
     
-    # 5 colunas multiplicadas por 106.4 = 532 pontos exatos (Encaixe Milimétrico Sem Erros)
     prop_table = Table(table_data, colWidths=[106.4, 106.4, 106.4, 106.4, 106.4])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
@@ -126,10 +120,15 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# SIDEBAR DE INPUTS
+# SIDEBAR DE INPUTS (Configuração Fixa dos Parâmetros + Botão Protegido)
 # -----------------------------------------------------------------------------
 st.sidebar.header("🎛️ Parâmetros do Pré-Mercado")
 data_hoje = st.sidebar.text_input("Data da Sessão", pd.Timestamp.now().strftime("%d/%m/%Y"))
+
+# BOTÃO DOURADO DIRETAMENTE NA SIDEBAR PARA EVITAR DESAPARECIMENTO VISUAL
+st.sidebar.markdown("---")
+bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
+st.sidebar.markdown("---")
 
 st.sidebar.subheader("🎯 Níveis Canal USTEC (QQQ)")
 ustec_spot = st.sidebar.text_input("Preço de Ajuste Inicial", "$720.32")
@@ -148,33 +147,33 @@ vetor_macro_pt = st.sidebar.selectbox("Filtro de Pressão (PT)", ["Regime de Neu
 vetor_macro_en = "Neutral Regime / Lateral" if "Neutralidade" in vetor_macro_pt else ("Active Selling Pressure" if "Vendedora" in vetor_macro_pt else "Active Buying Pressure")
 
 # -----------------------------------------------------------------------------
-# CORPO PRINCIPAL ENCAPSULADO EM UM FORMULÁRIO SEGURO (ANTITRAVA)
+# CORPO PRINCIPAL DE INSERÇÃO DE DADOS (Interface Aberta, Estável e Direta)
 # -----------------------------------------------------------------------------
-with st.form(key="engine_form_sandbox"):
-    col_text, col_graph = st.columns(2)
+col_text, col_graph = st.columns(2)
 
-    with col_text:
-        st.subheader("📝 Diretrizes Ocultas (Claude Engine)")
-        st.caption("Cole o texto gerado pela Skill Internacional do Claude (com as marcas [PT] e [EN]):")
-        analise_texto = st.text_area("Boletim Proprietário", height=420, placeholder="1. ARQUITETURA DE REGIMES DE PREÇO...\n[PT] O Vetor USTEC...\n[EN] The USTEC Vector...")
+with col_text:
+    st.subheader("📝 Diretrizes Ocultas (Claude Engine)")
+    st.caption("Cole o texto gerado pela Skill Internacional do Claude (com as marcas [PT] e [EN]):")
+    analise_texto = st.text_area("Boletim Proprietário", height=450, placeholder="1. ARQUITETURA DE REGIMES DE PREÇO...\n[PT] O Vetor USTEC...\n[EN] The USTEC Vector...")
 
-    with col_graph:
-        st.subheader("🖼️ Galeria de Prints e Mapeamentos")
-        st.caption("Selecione ou arraste múltiplos arquivos de imagem ao mesmo tempo:")
-        uploaded_files = st.file_uploader("Arrastar múltiplos prints gráficos aqui", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
-        
-        legendas_pt = []
-        legendas_en = []
-        
-        if uploaded_files:
-            st.info(f"📁 {len(uploaded_files)} imagens prontas para compilação.")
-            for idx, file in enumerate(uploaded_files):
-                c_l1, c_l2 = st.columns(2)
-                with c_l1:
-                    leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
-                    legendas_pt.append(leg_pt)
-                with c_l2:
-                    leg_en = st.text_input(f"📌 Legenda Imagem {idx+1} (EN):", f"Technical structural map tracking - Layout {idx+1}.", key=f"en_leg_{idx}")
-                    legendas_en.append(leg_en)
+with col_graph:
+    st.subheader("🖼️ Galeria de Prints e Mapeamentos")
+    st.caption("Selecione ou arraste múltiplos arquivos de imagem ao mesmo tempo:")
+    uploaded_files = st.file_uploader("Arrastar múltiplos prints gráficos aqui", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+    
+    legendas_pt = []
+    legendas_en = []
+    
+    if uploaded_files:
+        st.info(f"📁 {len(uploaded_files)} imagens prontas para compilação.")
+        for idx, file in enumerate(uploaded_files):
+            st.image(file, caption=f"Visualização: {file.name}", use_container_width=True)
+            c_l1, c_l2 = st.columns(2)
+            with c_l1:
+                leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
+                legendas_pt.append(leg_pt)
+            with c_l2:
+                leg_en = st.text_input(f"📌 Legenda Imagem {idx+1} (EN):", f"Technical structural map tracking - Layout {idx+1}.", key=f"en_leg_{idx}")
+                legendas_en.append(leg_en)
 
-    st.markdown("---")
+# -----------------------------------------------------------------------------
