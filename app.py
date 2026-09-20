@@ -10,7 +10,7 @@ import os
 # Configuração da Interface Web (Estética Premium Dark)
 st.set_page_config(page_title="GenilTrader — Engine de Relatórios", layout="wide")
 
-# Customização CSS Avançada para consertar contraste, botões e espaçamentos
+# Customização CSS Avançada
 st.markdown("""
     <style>
     .main-title { font-size:32px; font-weight:bold; color:#D4AF37; margin-bottom:5px; font-family:'Helvetica Neue', sans-serif; }
@@ -22,11 +22,12 @@ st.markdown("""
         font-size: 16px !important;
         border-radius: 6px !important;
         border: none !important;
+        padding: 10px 20px !important;
         transition: all 0.3s ease;
     }
     div.stButton > button:first-child:hover {
         background-color: #F59E0B !important;
-        transform: scale(1.01);
+        transform: scale(1.02);
     }
     textarea { font-family: 'Courier New', Courier, monospace !important; font-size: 14px !important; }
     </style>
@@ -36,10 +37,15 @@ st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE REL
 st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Suporte a Múltiplos Prints Dinâmicos e Relatórios Bilíngues independentes</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SIDEBAR DE INPUTS
+# SIDEBAR DE INPUTS (Com o Botão de Ativação Posicionado no Topo)
 # -----------------------------------------------------------------------------
 st.sidebar.header("🎛️ Parâmetros do Pré-Mercado")
 data_hoje = st.sidebar.text_input("Data da Sessão", pd.Timestamp.now().strftime("%d/%m/%Y"))
+
+# BOTÃO DE COMPILAÇÃO MOVIDO PARA O TOPO DA SIDEBAR PARA ACESSO IMEDIATO
+st.sidebar.markdown("---")
+bt_processar = st.sidebar.button("🔥 COMPILAR BOLETIMS ALFA", use_container_width=True)
+st.sidebar.markdown("---")
 
 st.sidebar.subheader("🎯 Níveis Canal USTEC (QQQ)")
 ustec_spot = st.sidebar.text_input("Preço de Ajuste Inicial", "$720.32")
@@ -90,7 +96,7 @@ with col_graph:
                 legendas_en.append(leg_en)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF COM AS MARGENS E COLUNAS TRAVADAS
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, v_macro, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
@@ -106,7 +112,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     elements.append(Paragraph(titulo, style_h1))
     elements.append(Paragraph(f"{sub_titulo} — Date/Data: {data_hoje}", style_sub))
     
-    # Tabela com larguras explicitamente declaradas para evitar erros de sintaxe
     elements.append(Paragraph("🎯 ARQUITETURA DE REGIMES DE PREÇO / PRICE REGIME", style_h2))
     table_data = [
         [Paragraph(f"<b>{label_ativo}</b>", style_body), Paragraph(f"<b>{label_ajuste}</b>", style_body), Paragraph(f"<b>{label_zce}</b>", style_body), Paragraph(f"<b>{label_zae}</b>", style_body), Paragraph(f"<b>{label_er}</b>", style_body)],
@@ -126,11 +131,9 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     elements.append(prop_table)
     elements.append(Spacer(1, 5))
     
-    # Filtro Macro
     label_macro = "Filtro de Pressão Sistêmica Global" if lang == "PT" else "Global Systemic Pressure Filter"
     elements.append(Paragraph(f"<b>{label_macro}:</b> {v_macro}", style_body))
     
-    # Extração Textual
     elements.append(Paragraph("📝 DIRETRIZES TÁTICAS OPERACIONAIS / OPERATIONAL THESES", style_h2))
     linhas = analise_texto.split('\n')
     bloco_valido = False
@@ -152,7 +155,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
             if l.strip() and not l.strip().startswith("["):
                 elements.append(Paragraph(l, style_body))
                 
-    # Loops para anexar MÚLTIPLAS IMAGENS
     if uploaded_files:
         elements.append(Paragraph("🖼️ VISUALIZAÇÃO E ESTRUTURAÇÃO DO MAPA VISUAL", style_h2))
         for idx, file in enumerate(uploaded_files):
@@ -169,7 +171,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
             elements.append(Paragraph(f"<b>Figura {idx+1}:</b> {legenda_atual}", style_caption))
             elements.append(Spacer(1, 5))
         
-    # Cláusula de Confidencialidade
     elements.append(Spacer(1, 15))
     aviso_text = "PROPRIEDADE INTELECTUAL RETIDA — DISTRIBUIÇÃO PROIBIDA EXTRA ASSINANTES" if lang == "PT" else "PROPRIETARY INTELLECTUAL PROPERTY — UNAUTHORIZED DISTRIBUTION IS STRICTLY PROHIBITED"
     style_aviso = ParagraphStyle('Aviso', parent=styles['Normal'], fontName='Helvetica-BoldOblique', fontSize=7.5, textColor=colors.HexColor('#94A3B8'), alignment=1)
@@ -178,6 +179,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# BOTÕES DE EXECUÇÃO
+# EXECUÇÃO DO PROCESSAMENTO LOGÍSTICO
 # -----------------------------------------------------------------------------
-st.markdown("---")
+if bt_processar:
