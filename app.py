@@ -37,7 +37,7 @@ st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE REL
 st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF (Largura de Colunas Travada e Corrigida)
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, data_h, u_spot, u_zce, u_zae, u_er, s_spot, s_zce, s_zae, s_er, v_macro, analise_text, up_files, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
@@ -60,6 +60,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), s_spot, s_zce, s_zae, s_er]
     ]
     
+    # CORREÇÃO CRUCIAL DA LINHA TRAVADA: 5 colunas fixas de 106.4 pontos (Indestrutível)
     prop_table = Table(table_data, colWidths=[106.4, 106.4, 106.4, 106.4, 106.4])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
@@ -77,7 +78,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     
     elements.append(Paragraph("📝 DIRETRIZES TÁTICAS OPERACIONAIS / OPERATIONAL THESES", style_h2))
     
-    # TRATAMENTO DE TEXTO SEGURO: Joga todas as linhas válidas para dentro do PDF sem travar
+    # Processamento de texto livre sem travas de tags complexas
     linhas = analise_text.split('\n')
     for l in linhas:
         if l.strip() and not l.strip().startswith("[PT]") and not l.strip().startswith("[EN]"):
@@ -137,10 +138,10 @@ ustec_zae  = st.sidebar.text_input("Z-AE (Zona de Absorção)", "$700.00")
 ustec_er   = st.sidebar.text_input("ER (Eixo de Rotação)", "$718.40")
 
 st.sidebar.subheader("🎯 Níveis Canal US500 (SPY)")
-us500_spot = st.sidebar.text_input("Preço de Referência Base", "$762.33")
-us500_zce  = st.sidebar.text_input("Z-CE (Zona de Contração)", "$767.00")
-us500_zae  = st.sidebar.text_input("Z-AE (Zona de Absorção)", "$760.00")
-us500_er   = st.sidebar.text_input("ER (Eixo de Rotação)", "$763.54")
+us500_spot = st.sidebar.text_input("Preço de Referência Base", "$5,720")
+us500_zce  = st.sidebar.text_input("Z-CE (Zona de Contração)", "$5,760")
+us500_zae  = st.sidebar.text_input("Z-AE (Zona de Absorção)", "$5,680")
+us500_er   = st.sidebar.text_input("ER (Eixo de Rotação)", "$5,710")
 
 st.sidebar.subheader("📺 Vetor Macroeconômico")
 vetor_macro_pt = st.sidebar.selectbox("Filtro de Pressão (PT)", ["Regime de Neutralidade / Lateral", "Pressão Vendedora Ativa", "Pressão Compradora Ativa"])
@@ -169,4 +170,3 @@ with col_graph:
         for idx, file in enumerate(uploaded_files):
             c_l1, c_l2 = st.columns(2)
             with c_l1:
-                leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
