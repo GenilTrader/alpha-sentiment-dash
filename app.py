@@ -5,14 +5,11 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from PIL import Image
+import io
 import os
 
 # Configuração da Interface Web (Estética Premium Dark)
 st.set_page_config(page_title="GenilTrader — Engine de Relatórios", layout="wide")
-
-# Inicialização da Memória de Estado de Segurança (Evita que o clique resete)
-if "boletins_compilados" not in st.session_state:
-    st.session_state.boletins_compilados = False
 
 # Customização CSS Avançada
 st.markdown("""
@@ -23,10 +20,10 @@ st.markdown("""
         background-color: #D4AF37 !important;
         color: #0F172A !important;
         font-weight: bold !important;
-        font-size: 15px !important;
+        font-size: 14px !important;
         border-radius: 6px !important;
         border: none !important;
-        padding: 10px 20px !important;
+        padding: 10px 15px !important;
         transition: all 0.3s ease;
     }
     div.stButton > button:first-child:hover {
@@ -41,7 +38,7 @@ st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE REL
 st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF (Mapeamento de 106.4 pontos por coluna)
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, data_h, u_spot, u_zce, u_zae, u_er, s_spot, s_zce, s_zae, s_er, v_macro, analise_text, up_files, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
@@ -104,8 +101,13 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         elements.append(Paragraph("🖼️ VISUALIZAÇÃO E ESTRUTURAÇÃO DO MAPA VISUAL", style_h2))
         for idx, file in enumerate(up_files):
             temp_img_path = f"temp_chart_{lang}_{idx}.png"
+            
+            # COMPRESSÃO ATIVADA: Reduz o tamanho físico na memória para não estourar o servidor gratuito
             img = Image.open(file)
-            img.save(temp_img_path)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
+            img.save(temp_img_path, "JPEG", quality=85)
             
             max_width = 500
             w, h = img.size
@@ -124,25 +126,22 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# SIDEBAR DE CONFIGURAÇÕES (Central de downloads travada no topo)
+# SIDEBAR DE CONFIGURAÇÕES (Central de Controle Otimizada)
 # -----------------------------------------------------------------------------
 st.sidebar.header("🎛️ Painel de Controle GenilTrader")
 data_hoje = st.sidebar.text_input("Data da Sessão", pd.Timestamp.now().strftime("%d/%m/%Y"))
 
-# BOTÃO DE ATIVAÇÃO FIXADO NA BARRA LATERAL
 st.sidebar.markdown("---")
 bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
 st.sidebar.markdown("---")
 
-# ÁREA CRUCIAL: Se a memória do navegador marcar como gerado, os botões de download ficam fixados eternamente no topo da barra lateral
-if st.session_state.boletins_compilados or bt_processar:
+# MUDANÇA CIRÚRGICA: Os botões de download só aparecem se os arquivos físicos existirem de verdade no disco do servidor
+if os.path.exists("boletim_alfa_PT.pdf") and os.path.exists("boletim_alfa_EN.pdf"):
     st.sidebar.subheader("📥 Downloads Disponibilizados")
-    if os.path.exists("boletim_alfa_PT.pdf"):
-        with open("boletim_alfa_PT.pdf", "rb") as f_pt:
-            st.sidebar.download_button("📥 BOLETIM EM PORTUGUÊS [PDF]", data=f_pt, file_name=f"Boletim_Alfa_PT_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
-    if os.path.exists("boletim_alfa_EN.pdf"):
-        with open("boletim_alfa_EN.pdf", "rb") as f_en:
-            st.sidebar.download_button("📥 DOWNLOAD ENGLISH VERSION [PDF]", data=f_en, file_name=f"Alpha_Sentiment_EN_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    with open("boletim_alfa_PT.pdf", "rb") as f_pt:
+        st.sidebar.download_button("📥 BOLETIM EM PORTUGUÊS [PDF]", data=f_pt, file_name=f"Boletim_Alfa_PT_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    with open("boletim_alfa_EN.pdf", "rb") as f_en:
+        st.sidebar.download_button("📥 DOWNLOAD ENGLISH VERSION [PDF]", data=f_en, file_name=f"Alpha_Sentiment_EN_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
     st.sidebar.markdown("---")
 
 st.sidebar.subheader("🎯 Níveis Canal USTEC (QQQ)")
@@ -162,7 +161,7 @@ vetor_macro_pt = st.sidebar.selectbox("Filtro de Pressão (PT)", ["Regime de Neu
 vetor_macro_en = "Neutral Regime / Lateral" if "Neutralidade" in vetor_macro_pt else ("Active Selling Pressure" if "Vendedora" in vetor_macro_pt else "Active Buying Pressure")
 
 # -----------------------------------------------------------------------------
-# CORPO PRINCIPAL DE INSERÇÃO DE DADOS (Interface Aberta, Estável e Direta)
+# CORPO PRINCIPAL DE INSERÇÃO DE DADOS
 # -----------------------------------------------------------------------------
 col_text, col_graph = st.columns(2)
 
