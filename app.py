@@ -10,7 +10,11 @@ import os
 # Configuração da Interface Web (Estética Premium Dark)
 st.set_page_config(page_title="GenilTrader — Engine de Relatórios", layout="wide")
 
-# Customização CSS Avançada (Garante contraste absoluto e visual de mesa proprietária)
+# Inicialização da Memória de Estado de Segurança (Evita que o clique resete)
+if "boletins_compilados" not in st.session_state:
+    st.session_state.boletins_compilados = False
+
+# Customização CSS Avançada
 st.markdown("""
     <style>
     .main-title { font-size:32px; font-weight:bold; color:#D4AF37; margin-bottom:5px; font-family:'Helvetica Neue', sans-serif; }
@@ -19,15 +23,15 @@ st.markdown("""
         background-color: #D4AF37 !important;
         color: #0F172A !important;
         font-weight: bold !important;
-        font-size: 16px !important;
+        font-size: 15px !important;
         border-radius: 6px !important;
         border: none !important;
-        padding: 12px 24px !important;
+        padding: 10px 20px !important;
         transition: all 0.3s ease;
     }
     div.stButton > button:first-child:hover {
         background-color: #F59E0B !important;
-        transform: scale(1.01);
+        transform: scale(1.02);
     }
     textarea { font-family: 'Courier New', Courier, monospace !important; font-size: 14px !important; }
     </style>
@@ -37,7 +41,7 @@ st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE REL
 st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF (Mapeamento de 106.4 pontos por coluna)
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, data_h, u_spot, u_zce, u_zae, u_er, s_spot, s_zce, s_zae, s_er, v_macro, analise_text, up_files, lista_legendas):
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
@@ -120,15 +124,26 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# SIDEBAR DE INPUTS (Configuração Fixa dos Parâmetros + Botão Protegido)
+# SIDEBAR DE CONFIGURAÇÕES (Central de downloads travada no topo)
 # -----------------------------------------------------------------------------
-st.sidebar.header("🎛️ Parâmetros do Pré-Mercado")
+st.sidebar.header("🎛️ Painel de Controle GenilTrader")
 data_hoje = st.sidebar.text_input("Data da Sessão", pd.Timestamp.now().strftime("%d/%m/%Y"))
 
-# BOTÃO DOURADO DIRETAMENTE NA SIDEBAR PARA EVITAR DESAPARECIMENTO VISUAL
+# BOTÃO DE ATIVAÇÃO FIXADO NA BARRA LATERAL
 st.sidebar.markdown("---")
 bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
 st.sidebar.markdown("---")
+
+# ÁREA CRUCIAL: Se a memória do navegador marcar como gerado, os botões de download ficam fixados eternamente no topo da barra lateral
+if st.session_state.boletins_compilados or bt_processar:
+    st.sidebar.subheader("📥 Downloads Disponibilizados")
+    if os.path.exists("boletim_alfa_PT.pdf"):
+        with open("boletim_alfa_PT.pdf", "rb") as f_pt:
+            st.sidebar.download_button("📥 BOLETIM EM PORTUGUÊS [PDF]", data=f_pt, file_name=f"Boletim_Alfa_PT_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    if os.path.exists("boletim_alfa_EN.pdf"):
+        with open("boletim_alfa_EN.pdf", "rb") as f_en:
+            st.sidebar.download_button("📥 DOWNLOAD ENGLISH VERSION [PDF]", data=f_en, file_name=f"Alpha_Sentiment_EN_{data_hoje.replace('/', '_')}.pdf", mime="application/pdf", use_container_width=True)
+    st.sidebar.markdown("---")
 
 st.sidebar.subheader("🎯 Níveis Canal USTEC (QQQ)")
 ustec_spot = st.sidebar.text_input("Preço de Ajuste Inicial", "$720.32")
@@ -159,21 +174,3 @@ with col_text:
 with col_graph:
     st.subheader("🖼️ Galeria de Prints e Mapeamentos")
     st.caption("Selecione ou arraste múltiplos arquivos de imagem ao mesmo tempo:")
-    uploaded_files = st.file_uploader("Arrastar múltiplos prints gráficos aqui", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
-    
-    legendas_pt = []
-    legendas_en = []
-    
-    if uploaded_files:
-        st.info(f"📁 {len(uploaded_files)} imagens prontas para compilação.")
-        for idx, file in enumerate(uploaded_files):
-            st.image(file, caption=f"Visualização: {file.name}", use_container_width=True)
-            c_l1, c_l2 = st.columns(2)
-            with c_l1:
-                leg_pt = st.text_input(f"📌 Legenda Imagem {idx+1} (PT):", f"Estruturação do mapa visual técnico - Painel {idx+1}.", key=f"pt_leg_{idx}")
-                legendas_pt.append(leg_pt)
-            with c_l2:
-                leg_en = st.text_input(f"📌 Legenda Imagem {idx+1} (EN):", f"Technical structural map tracking - Layout {idx+1}.", key=f"en_leg_{idx}")
-                legendas_en.append(leg_en)
-
-# -----------------------------------------------------------------------------
