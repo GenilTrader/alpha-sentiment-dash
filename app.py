@@ -119,7 +119,7 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), us500_spot, us500_zce, us500_zae, us500_er]
     ]
     
-    prop_table = Table(table_data, colWidths=[110, 100, 100, 100, 110])
+    prop_table = Table(table_data, colWidths=[110, 85, 85, 85, 115])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -179,6 +179,6 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
     doc.build(elements)
 
 # -----------------------------------------------------------------------------
-# EXECUÇÃO DO PROCESSAMENTO LOGÍSTICO
+# EXECUÇÃO DO PROCESSAMENTO LOGÍSTICO (Bloco Corrigido com Espaçamento Estrito)
 # -----------------------------------------------------------------------------
 if bt_processar:
