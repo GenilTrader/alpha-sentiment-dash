@@ -38,12 +38,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🛡️ GENILTRADER [▲] — ENGINE DE RELATÓRIOS MULTI-GRAPH</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Suporte a Múltiplos Prints Dinâmicos e Relatórios Bilíngues independentes</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Algoritmo Quant Proprietário — Mapeamento Internacional de Barreiras Macroeconômicas</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF
+# FUNÇÃO DE COMPILAÇÃO ISOLADA DO PDF (Métrica de Margem Calibrada em 106.4 pontos)
 # -----------------------------------------------------------------------------
 def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, label_zce, label_zae, label_er, data_h, u_spot, u_zce, u_zae, u_er, s_spot, s_zce, s_zae, s_er, v_macro, analise_text, up_files, lista_legendas):
+    # Total disponível na folha: 612 largura - 80 margens = 532 de área útil
     doc = SimpleDocTemplate(filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
@@ -64,7 +65,8 @@ def compilar_pdf(filename, lang, titulo, sub_titulo, label_ativo, label_ajuste, 
         [Paragraph("<b>Vetor US500</b> (SPY)", style_body), s_spot, s_zce, s_zae, s_er]
     ]
     
-    prop_table = Table(table_data, colWidths=[110, 100, 100, 100, 110])
+    # 5 colunas multiplicadas por 106.4 = 532 pontos exatos (Encaixe Milimétrico Sem Erros)
+    prop_table = Table(table_data, colWidths=[106.4, 106.4, 106.4, 106.4, 106.4])
     prop_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F8FAFC')),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -176,7 +178,3 @@ with st.form(key="engine_form_sandbox"):
                     legendas_en.append(leg_en)
 
     st.markdown("---")
-    bt_processar = st.form_submit_button(label="🔥 COMPILAR E EMITIR BOLETIMS INTERNACIONAIS [PDF]")
-
-# -----------------------------------------------------------------------------
-# ZONA DE MEMÓRIA E DOWNLOAD (À prova de desaparecimento)
