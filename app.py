@@ -191,6 +191,32 @@ FORMATO EXATO EXIGIDO PARA A RESPOSTA (Copie a estrutura com [PT] e [EN]):
 (Regras estritas de gerenciamento de risco no pavio do candle de gatilho e invalidação técnica).
 [EN]
 (As mesmas regras em Inglês institucional).
+
+## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO / CHART MAPPING & OPERATIONAL CONDUCT
+[PT]
+📌 O QUE MARCAR NO SEU GRÁFICO (TRADINGVIEW / METATRADER):
+- 🟡 LINHA AMARELA (Amarelo Ouro): ER (Eixo de Rotação) em {er} -> Divisor de águas (Acima do ER = Viés Comprador; Abaixo do ER = Viés Vendedor).
+- 🔴 LINHA VERMELHA (Resistência / Teto): Z-CE (Zona de Contração Executiva) em {zce} -> Região de topo/Call Wall. Procurar exaustão compradora para gatilhos de venda.
+- 🟢 LINHA VERDE (Suporte / Piso): Z-AE (Zona de Absorção Executiva) em {zae} -> Região de fundo/Put Wall. Procurar suporte por absorção de volume para gatilhos de compra.
+- 🟣 LINHAS ROXAS TRACEJADAS: Fronteira Alfa ({alfa if alfa else 'N/A'}) e Fronteira Ômega ({omega if omega else 'N/A'}) -> Limites extremos de volatilidade esperada da sessão.
+
+🎯 CONDUTA OPERACIONAL PASSO A PASSO:
+1. Ponto de Equilíbrio (ER {er}): Se o preço estiver acima, busque compras nos recuos rumo à Z-CE ({zce}). Se estiver abaixo, busque vendas nos repiques rumo à Z-AE ({zae}).
+2. Reação na Z-CE ({zce}): Não compre no topo! Aguarde Candle de Rejeição de 1min/5min para entrar vendido buscando o retorno ao ER.
+3. Reação na Z-AE ({zae}): Não venda no fundo! Aguarde absorção de ordens para entrar comprado buscando retorno ao ER.
+4. Invalidação: Fechamento de candle cheio além de Alfa/Ômega invalida o setup operacional.
+[EN]
+📌 CHART MAPPING GUIDE (TRADINGVIEW / METATRADER):
+- 🟡 GOLDEN YELLOW LINE: ER (Rotation Axis) at {er} -> Session Equilibrium (Above ER = Bullish Bias; Below ER = Bearish Bias).
+- 🔴 RED LINE (Resistance / Ceiling): Z-CE (Executive Contraction Zone) at {zce} -> Call Wall boundary. Look for buyer exhaustion for short triggers.
+- 🟢 GREEN LINE (Support / Floor): Z-AE (Executive Absorption Zone) at {zae} -> Put Wall boundary. Look for volume absorption for long triggers.
+- 🟣 PURPLE DASHED LINES: Alpha ({alfa if alfa else 'N/A'}) & Omega ({omega if omega else 'N/A'}) Frontiers -> Session extreme volatility limits.
+
+🎯 OPERATIONAL EXECUTION STEP-BY-STEP:
+1. Equilibrium Point (ER {er}): If price holds above, prioritize long pullbacks towards Z-CE ({zce}). If below, prioritize shorts towards Z-AE ({zae}).
+2. Z-CE Reaction ({zce}): Do not buy the highs! Wait for 1m/5m Rejection Candle for short trades returning to ER.
+3. Z-AE Reaction ({zae}): Do not sell the lows! Wait for volume absorption to trigger long trades returning to ER.
+4. Technical Invalidation: Full candle body close beyond Alpha/Omega invalidates setup.
 """
 
     # Se a chave da API Gemini foi informada e a SDK está disponível
@@ -236,6 +262,19 @@ Aguardaremos o preço testar os limites das regiões institucionais (Fronteira A
 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA
 Mantenha o risco estritamente limitado com assimetria estimada de {rr_str}. A invalidação técnica da tese ocorrerá caso o preço confirme o fechamento de uma barra cheia além das zonas de exaustão demarcadas. Não persiga o preço fora das regiões operacionais proprietárias.
 
+4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO E CONDUTA OPERACIONAL
+📌 O QUE MARCAR NO SEU GRÁFICO (TRADINGVIEW / METATRADER):
+- 🟡 LINHA AMARELA (Amarelo Ouro): ER (Eixo de Rotação) em {er} -> Divisor de águas (Acima do ER = Viés Comprador; Abaixo do ER = Viés Vendedor).
+- 🔴 LINHA VERMELHA (Resistência / Teto): Z-CE (Zona de Contração Executiva) em {zce} -> Região de topo. Procurar exaustão compradora para gatilhos de venda.
+- 🟢 LINHA VERDE (Suporte / Piso): Z-AE (Zona de Absorção Executiva) em {zae} -> Região de fundo. Procurar suporte por absorção de volume para gatilhos de compra.
+- 🟣 LINHAS ROXAS TRACEJADAS: Fronteira Alfa ({alfa if alfa else 'N/A'}) e Fronteira Ômega ({omega if omega else 'N/A'}) -> Limites extremos de volatilidade esperada da sessão.
+
+🎯 CONDUTA OPERACIONAL PASSO A PASSO:
+1. Ponto de Equilíbrio (ER {er}): Se o preço estiver acima, busque compras nos recuos rumo à Z-CE ({zce}). Se estiver abaixo, busque vendas nos repiques rumo à Z-AE ({zae}).
+2. Reação na Z-CE ({zce}): Não compre no topo! Aguarde Candle de Rejeição de 1min/5min para entrar vendido buscando o retorno ao ER.
+3. Reação na Z-AE ({zae}): Não venda no fundo! Aguarde absorção de ordens para entrar comprado buscando retorno ao ER.
+4. Invalidação: Fechamento de candle cheio além de Alfa/Ômega invalida o setup operacional.
+
 [EN]
 1. PRICE REGIME ARCHITECTURE
 The asset {ativo_nome} is trading under a {vies_str} regime. The Rotation Axis (ER) mapped at {er} serves as the core algorithmic equilibrium point for the session. Sustained price action above the ER maintains a {zce_prob}% probability of retesting the Z-CE (Executive Contraction Zone) at {zce}, where heavy institutional order absorption is anticipated. Conversely, losing the ER will trigger liquidity distribution down to the Z-AE (Executive Absorption Zone) at {zae} (probability of {zae_prob}%).
@@ -244,7 +283,22 @@ The asset {ativo_nome} is trading under a {vies_str} regime. The Rotation Axis (
 We will monitor price action near institutional boundary zones (Alpha Frontier {alfa if alfa else ''} / Omega Frontier {omega if omega else ''}). The high-asymmetry execution trigger on the intraday chart will strictly require the print of a Critical Absorption Candle aligned with the Statistical Arbitrage Vector (VAE) — confirmed by {ativo_nome} price divergence against the systemic macro filter ({macro_filtro}).
 
 3. EXECUTION RULES & ASYMMETRY
-Keep risk strictly contained with an estimated R:R ratio of {rr_str}. Technical invalidation is mandatory if a full candle body closes beyond the defined exhaustion zones. Do not chase price action outside our proprietary operational zones."""
+Keep risk strictly contained with an estimated R:R ratio of {rr_str}. Technical invalidation is mandatory if a full candle body closes beyond the defined exhaustion zones. Do not chase price action outside our proprietary operational zones.
+
+4. CHART MAPPING GUIDE & OPERATIONAL CONDUCT
+📌 CHART MAPPING GUIDE (TRADINGVIEW / METATRADER):
+- 🟡 GOLDEN YELLOW LINE: ER (Rotation Axis) at {er} -> Session Equilibrium (Above ER = Bullish Bias; Below ER = Bearish Bias).
+- 🔴 RED LINE (Resistance / Ceiling): Z-CE (Executive Contraction Zone) at {zce} -> Call Wall boundary. Look for buyer exhaustion for short triggers.
+- 🟢 GREEN LINE (Support / Floor): Z-AE (Executive Absorption Zone) at {zae} -> Put Wall boundary. Look for volume absorption for long triggers.
+- 🟣 PURPLE DASHED LINES: Alpha ({alfa if alfa else 'N/A'}) & Omega ({omega if omega else 'N/A'}) Frontiers -> Session extreme volatility limits.
+
+🎯 OPERATIONAL EXECUTION STEP-BY-STEP:
+1. Equilibrium Point (ER {er}): If price holds above, prioritize long pullbacks towards Z-CE ({zce}). If below, prioritize shorts towards Z-AE ({zae}).
+2. Z-CE Reaction ({zce}): Do not buy the highs! Wait for 1m/5m Rejection Candle for short trades returning to ER.
+3. Z-AE Reaction ({zae}): Do not sell the lows! Wait for volume absorption to trigger long trades returning to ER.
+4. Technical Invalidation: Full candle body close beyond Alpha/Omega invalidates setup."""
+
+    return texto_nativo
 
     return texto_nativo
 
@@ -355,11 +409,20 @@ st.sidebar.header("🎛️ Painel de Controle GenilTrader")
 
 # 1. Configuração da API Key Gratuita do Gemini
 st.sidebar.subheader("🔑 Conexão IA (Google Gemini Free)")
-gemini_key = st.sidebar.text_input(
+secret_key = ""
+try:
+    if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+        secret_key = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    secret_key = ""
+
+gemini_key_input = st.sidebar.text_input(
     "Gemini API Key (Opcional)",
+    value=secret_key,
     type="password",
-    help="Cole aqui sua chave gratuita do Google AI Studio. Se em branco, o sistema usará a Engine Quant Algorítmica nativa!"
+    help="Cole aqui sua chave gratuita do Google AI Studio ou deixe preenchido automaticamente via Secrets do Streamlit Cloud!"
 )
+gemini_key = gemini_key_input if gemini_key_input else secret_key
 st.sidebar.markdown("👉 [Obter chave gratuita no Google AI Studio](https://aistudio.google.com/)")
 
 st.sidebar.markdown("---")
@@ -491,34 +554,6 @@ with tab_analise:
     # 2. Área de Texto e Galeria de Prints
     col_text, col_graph = st.columns(2)
 
-    with col_text:
-        st.subheader("📝 Diretrizes Táticas Operacionais")
-        
-        # Botão para invocar a IA Quant
-        if st.button("🤖 GERAR ANÁLISE POR IA (MULTIMODAL & NATIVA)", use_container_width=True):
-            with st.spinner("Analisando métricas quant e imagens com a IA..."):
-                texto_gerado = gerar_analise_ia(
-                    ativo_nome=ativo_p1,
-                    spot=u_spot_in,
-                    zce=u_zce_in,
-                    zae=u_zae_in,
-                    er=u_er_in,
-                    alfa=u_alfa_in,
-                    omega=u_omega_in,
-                    macro_filtro=vetor_macro_pt,
-                    api_key=gemini_key,
-                    list_images=st.session_state.get('uploaded_files_cache', None)
-                )
-                st.session_state['analise_texto_key'] = texto_gerado
-                st.success("Análise gerada com sucesso!")
-
-        analise_texto = st.text_area(
-            "Boletim Proprietário Bilíngue",
-            value=st.session_state.get('analise_texto_key', ""),
-            height=430,
-            placeholder="Clique no botão acima para a IA gerar automaticamente ou cole suas diretrizes aqui contendo as tags [PT] e [EN]..."
-        )
-
     with col_graph:
         st.subheader("🖼️ Galeria de Prints e Comparação Gráfica")
         st.caption("Selecione ou arraste MÚLTIPLOS prints gráficos simultaneamente (ex: 15min e 5min):")
@@ -533,7 +568,7 @@ with tab_analise:
             st.session_state['uploaded_files_cache'] = uploaded_files
             st.info(f"📸 {len(uploaded_files)} gráfico(s) carregado(s). Insira as legendas abaixo:")
 
-        # Correção estrita de recuo: Legendagem em linhas simples empilhadas (sem bloco 'with c_l1:')
+        # Legendagem
         legendas_pt = []
         legendas_en = []
 
@@ -545,7 +580,101 @@ with tab_analise:
                 legendas_pt.append(leg_pt)
                 legendas_en.append(leg_en)
 
-    # 3. Processamento de PDF ao clicar na Sidebar
+    with col_text:
+        st.subheader("📝 Diretrizes Táticas Operacionais")
+        
+        # Botão para invocar a IA Quant
+        if st.button("🤖 GERAR ANÁLISE POR IA (MULTIMODAL & NATIVA)", use_container_width=True):
+            with st.spinner("Analisando métricas quant e gerando relatório PDF completo..."):
+                texto_gerado = gerar_analise_ia(
+                    ativo_nome=ativo_p1,
+                    spot=u_spot_in,
+                    zce=u_zce_in,
+                    zae=u_zae_in,
+                    er=u_er_in,
+                    alfa=u_alfa_in,
+                    omega=u_omega_in,
+                    macro_filtro=vetor_macro_pt,
+                    api_key=gemini_key,
+                    list_images=st.session_state.get('uploaded_files_cache', None)
+                )
+                st.session_state['analise_texto_key'] = texto_gerado
+
+                # Geração automática dos PDFs após criar análise
+                vetor_macro_en = "Neutral Regime / Lateral" if "Neutralidade" in vetor_macro_pt else ("Active Selling Pressure" if "Vendedora" in vetor_macro_pt else "Active Buying Pressure")
+                
+                compilar_pdf(
+                    filename="boletim_alfa_PT.pdf",
+                    lang="PT",
+                    titulo=f"BOLETIM ALFA — {ativo_p1}",
+                    sub_titulo="Relatório Quantitativo Institucional Exclusivo",
+                    label_ativo="Ativo / CFD",
+                    label_ajuste="Spot / Ajuste",
+                    label_zce="Z-CE (Contração)",
+                    label_zae="Z-AE (Absorção)",
+                    label_er="ER (Eixo Rotação)",
+                    data_h=data_hoje,
+                    u_spot=u_spot_in, u_zce=u_zce_in, u_zae=u_zae_in, u_er=u_er_in,
+                    s_spot=s_spot_in, s_zce=s_zce_in, s_zae=s_zae_in, s_er=s_er_in,
+                    v_macro=vetor_macro_pt,
+                    analise_text=texto_gerado,
+                    up_files=uploaded_files,
+                    lista_legendas=legendas_pt
+                )
+
+                compilar_pdf(
+                    filename="boletim_alfa_EN.pdf",
+                    lang="EN",
+                    titulo=f"ALPHA BULLETIN — {ativo_p1}",
+                    sub_titulo="Exclusive Institutional Quantitative Report",
+                    label_ativo="Asset / CFD",
+                    label_ajuste="Spot / Settlement",
+                    label_zce="Z-CE (Contraction)",
+                    label_zae="Z-AE (Absorption)",
+                    label_er="ER (Rotation Axis)",
+                    data_h=data_hoje,
+                    u_spot=u_spot_in, u_zce=u_zce_in, u_zae=u_zae_in, u_er=u_er_in,
+                    s_spot=s_spot_in, s_zce=s_zce_in, s_zae=s_zae_in, s_er=s_er_in,
+                    v_macro=vetor_macro_en,
+                    analise_text=texto_gerado,
+                    up_files=uploaded_files,
+                    lista_legendas=legendas_en
+                )
+                st.success("Análise e Relatórios PDF em Português e Inglês gerados com sucesso!")
+
+        analise_texto = st.text_area(
+            "Boletim Proprietário Bilíngue",
+            value=st.session_state.get('analise_texto_key', ""),
+            height=380,
+            placeholder="Clique no botão acima para a IA gerar automaticamente ou cole suas diretrizes aqui contendo as tags [PT] e [EN]..."
+        )
+
+        # Botões de Download do PDF diretamente abaixo do boletim
+        if os.path.exists("boletim_alfa_PT.pdf") or os.path.exists("boletim_alfa_EN.pdf"):
+            st.markdown("##### 📥 Baixar Relatórios em PDF (com Guia de Marcação Gráfica):")
+            d_col1, d_col2 = st.columns(2)
+            with d_col1:
+                if os.path.exists("boletim_alfa_PT.pdf"):
+                    with open("boletim_alfa_PT.pdf", "rb") as f_pt:
+                        st.download_button(
+                            "📥 BAIXAR BOLETIM PORTUGUÊS [PDF]",
+                            data=f_pt,
+                            file_name=f"Boletim_Alfa_PT_{data_hoje.replace('/', '_')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+            with d_col2:
+                if os.path.exists("boletim_alfa_EN.pdf"):
+                    with open("boletim_alfa_EN.pdf", "rb") as f_en:
+                        st.download_button(
+                            "📥 DOWNLOAD ENGLISH BULLETIN [PDF]",
+                            data=f_en,
+                            file_name=f"Alpha_Bulletin_EN_{data_hoje.replace('/', '_')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+
+    # 3. Processamento manual de PDF ao clicar na Sidebar
     if bt_processar:
         if not analise_texto.strip():
             st.error("⚠️ Insira ou gere o texto da análise antes de emitir os boletins!")
@@ -593,7 +722,7 @@ with tab_analise:
                     lista_legendas=legendas_en
                 )
 
-                st.success("🔥 BOLETIM PT E BOLETIM EN GERADOS COM SUCESSO! Baixe na barra lateral.")
+                st.success("🔥 BOLETIM PT E BOLETIM EN GERADOS COM SUCESSO! Baixe na barra lateral ou nos botões acima.")
 
 # -----------------------------------------------------------------------------
 # ABA 2: AUDITORIA DE PERFORMANCE & BASE DE DADOS HÍBRIDA
