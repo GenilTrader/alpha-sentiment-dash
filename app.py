@@ -3,7 +3,8 @@ import pandas as pd
 import datetime
 import os
 import io
-from PIL import Image
+import json
+from PIL import Image, ImageDraw, ImageFont
 
 # Importação condicional do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
@@ -172,6 +173,165 @@ def converter_dados_coleta_para_cfd(ativo_alvo, spot_in, zce_in, zae_in, er_in, 
     c_omega= round(omega * factor, 2) if omega else None
 
     return f"${c_spot:,.2f}", f"${c_zce:,.2f}", f"${c_zae:,.2f}", f"${c_er:,.2f}", f"${c_alfa:,.2f}" if c_alfa else "", f"${c_omega:,.2f}" if c_omega else ""
+
+# -----------------------------------------------------------------------------
+# MÓDULO 1: SNAPSHOT DIÁRIO COM TIMESTAMP
+# -----------------------------------------------------------------------------
+SNAPSHOT_FILE = "snapshots_diarios.json"
+
+def salvar_snapshot(ativo, spot, zce, zae, er, alfa, omega, vje, odtc_sem, macro):
+    """Salva um snapshot dos níveis do dia com timestamp exato para histórico."""
+    snapshot = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "data": datetime.datetime.now().strftime("%d/%m/%Y"),
+        "ativo": ativo,
+        "spot": spot, "zce": zce, "zae": zae, "er": er,
+        "alfa": alfa, "omega": omega,
+        "vje": vje, "odtc_semanal": odtc_sem,
+        "macro": macro
+    }
+    historico = []
+    if os.path.exists(SNAPSHOT_FILE):
+        try:
+            with open(SNAPSHOT_FILE, 'r', encoding='utf-8') as f:
+                historico = json.load(f)
+        except Exception:
+            historico = []
+    historico.append(snapshot)
+    with open(SNAPSHOT_FILE, 'w', encoding='utf-8') as f:
+        json.dump(historico, f, ensure_ascii=False, indent=2)
+    return snapshot
+
+# -----------------------------------------------------------------------------
+# MÓDULO 3: GERADOR DE CARD VISUAL PARA REDES SOCIAIS (PNG 1080x1080)
+# -----------------------------------------------------------------------------
+def gerar_card_visual(ativo, data, spot, zce, zae, er, vje, odtc_sem, vies, rr):
+    """
+    Gera um card PNG 1080x1080 pronto para Instagram/Stories/WhatsApp
+    com visual GenilTrader [▲] sem expor nenhuma fonte de dados.
+    """
+    W, H = 1080, 1080
+    img = Image.new('RGB', (W, H), color='#090D16')
+    draw = ImageDraw.Draw(img)
+
+    # Gradiente de fundo simulado
+    for y in range(H):
+        alpha = int(20 * (1 - y / H))
+        r = min(255, 17 + alpha)
+        g = min(255, 24 + alpha)
+        b = min(255, 39 + alpha)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Borda dourada superior
+    draw.rectangle([(0, 0), (W, 8)], fill='#D4AF37')
+    draw.rectangle([(0, H-8), (W, H)], fill='#D4AF37')
+
+    # Linha decorativa lateral
+    draw.rectangle([(0, 0), (6, H)], fill='#D4AF37')
+    draw.rectangle([(W-6, 0), (W, H)], fill='#D4AF37')
+
+    # Tentar usar fontes do sistema; se não, usa padrão
+    try:
+        fnt_title  = ImageFont.truetype("arial.ttf", 56)
+        fnt_sub    = ImageFont.truetype("arial.ttf", 30)
+        fnt_label  = ImageFont.truetype("arialbd.ttf", 26)
+        fnt_value  = ImageFont.truetype("arialbd.ttf", 46)
+        fnt_small  = ImageFont.truetype("arial.ttf", 22)
+        fnt_brand  = ImageFont.truetype("arialbd.ttf", 32)
+    except Exception:
+        fnt_title  = ImageFont.load_default()
+        fnt_sub    = fnt_title
+        fnt_label  = fnt_title
+        fnt_value  = fnt_title
+        fnt_small  = fnt_title
+        fnt_brand  = fnt_title
+
+    # Header
+    draw.text((54, 30), "GENILTRADER [▲]", font=fnt_brand, fill='#D4AF37')
+    draw.text((54, 78), "BOLETIM ALFA — ANÁLISE INSTITUCIONAL", font=fnt_small, fill='#94A3B8')
+
+    # Linha separadora
+    draw.rectangle([(54, 122), (W-54, 125)], fill='#1E293B')
+
+    # Ativo e Data
+    draw.text((54, 140), ativo, font=fnt_title, fill='#F8FAFC')
+    draw.text((W-250, 158), data, font=fnt_sub, fill='#64748B')
+
+    # Viés
+    vies_cor = '#10B981' if 'Comprador' in vies else '#EF4444'
+    vies_texto = '▲ REGIME COMPRADOR' if 'Comprador' in vies else '▼ REGIME VENDEDOR'
+    draw.text((54, 230), vies_texto, font=fnt_sub, fill=vies_cor)
+
+    # Linha separadora
+    draw.rectangle([(54, 285), (W-54, 287)], fill='#1E293B')
+
+    # Regiões principais — layout de grid
+    regioes = [
+        ("🔴  Z-CE  —  Zona de Contração",   zce,  '#EF4444'),
+        ("🟡  ER    —  Eixo de Rotação",      er,   '#D4AF37'),
+        ("🟢  Z-AE  —  Zona de Absorção",     zae,  '#10B981'),
+        ("🔵  VJE   —  Vetor de Janelas",     vje,  '#38BDF8'),
+    ]
+    y_pos = 308
+    for label, valor, cor in regioes:
+        draw.text((70, y_pos), label, font=fnt_label, fill='#94A3B8')
+        draw.text((70, y_pos + 34), str(valor) if valor else 'N/A', font=fnt_value, fill=cor)
+        y_pos += 130
+
+    # Nível secundário
+    draw.rectangle([(54, y_pos), (W-54, y_pos+1)], fill='#1E293B')
+    draw.text((70, y_pos+14), f"Nível Secundário Semanal:  {odtc_sem if odtc_sem else 'N/A'}", font=fnt_small, fill='#64748B')
+    draw.text((70, y_pos+44), f"R:R Estimado:  1:{rr}   |   Spot:  {spot}", font=fnt_small, fill='#64748B')
+
+    # Rodapé
+    draw.rectangle([(54, H-120), (W-54, H-119)], fill='#1E293B')
+    draw.text((54, H-108), "Propriedade Intelectual Retida — Exclusivo para Assinantes", font=fnt_small, fill='#334155')
+    draw.text((54, H-78), "GenilTrader [▲] — Distribuição Proibida Extra Assinantes", font=fnt_small, fill='#334155')
+    draw.text((54, H-48), "www.geniltrader.com", font=fnt_small, fill='#D4AF37')
+
+    card_path = "card_social_media.png"
+    img.save(card_path, 'PNG', quality=95)
+    return card_path
+
+# Extração de valores de imagem via IA (PRIVADO - nunca vai ao PDF)
+def extrair_valores_de_imagem(imagem_file, api_key):
+    """
+    Usa a visão computacional do Gemini para ler valores numéricos
+    de um print de referência. Os valores são retornados para preenchimento
+    automático. A imagem NUNCA é armazenada nem inserida no relatório.
+    """
+    if not api_key or not HAS_GENAI:
+        return None
+    try:
+        imagem_file.seek(0)
+        pil_img = Image.open(imagem_file)
+        client = genai.Client(api_key=api_key)
+        prompt_extracao = """
+        Analise esta imagem e extraia APENAS os valores numéricos das seguintes categorias:
+        1. Call Wall (nível de resistência superior)
+        2. Put Wall (nível de suporte inferior)  
+        3. Zero Gamma / Gamma Flip (ponto de equilíbrio)
+        4. Spot / Preço atual
+        
+        Retorne APENAS um JSON puro sem markdown, no seguinte formato exato:
+        {"call_wall": 000.00, "put_wall": 000.00, "zero_gamma": 000.00, "spot": 000.00}
+        
+        Se não encontrar algum valor, coloque null. Não inclua texto adicional.
+        """
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[pil_img, prompt_extracao]
+        )
+        if response and response.text:
+            texto = response.text.strip()
+            # Limpa markdown se veio
+            if '```' in texto:
+                texto = texto.split('```')[1].replace('json', '').strip()
+            dados = json.loads(texto)
+            return dados
+    except Exception as e:
+        return {"erro": str(e)}
+    return None
 
 # -----------------------------------------------------------------------------
 # FUNÇÕES DE CÁLCULO QUANT E PROBABILIDADE INSTITUCIONAL
@@ -611,10 +771,11 @@ if os.path.exists("boletim_alfa_PT.pdf") or os.path.exists("boletim_alfa_EN.pdf"
 # -----------------------------------------------------------------------------
 # CORPO PRINCIPAL COM ABAS NAVEGÁVEIS
 # -----------------------------------------------------------------------------
-tab_analise, tab_auditoria, tab_manual = st.tabs([
-    "📝 Análise & Gerador Quant", 
+tab_analise, tab_coleta, tab_auditoria, tab_manual = st.tabs([
+    "📝 Análise & Gerador Quant",
+    "🔍 Coleta Privada (Nunca no Relatório)",
     "📈 Auditoria & Base de Dados", 
-    "📖 Manual & Diretrizes Quant"
+    "📖 Manual & Glossário Quant"
 ])
 
 # -----------------------------------------------------------------------------
@@ -753,6 +914,30 @@ with tab_analise:
                     lista_legendas=legendas_en
                 )
                 st.success("Análise e Relatórios PDF em Português e Inglês gerados com sucesso!")
+                
+                # MÓDULO 1: Salvar snapshot automático com timestamp
+                salvar_snapshot(
+                    ativo=ativo_p1, spot=u_spot_in, zce=u_zce_in,
+                    zae=u_zae_in, er=u_er_in, alfa=u_alfa_in,
+                    omega=u_omega_in, vje=vje_ipda_in,
+                    odtc_sem=odtc_sem_in, macro=vetor_macro_pt
+                )
+
+                # MÓDULO 3: Gerar card visual para redes sociais
+                try:
+                    calc_card = calcular_regioes_e_probabilidade(u_spot_in, u_zce_in, u_zae_in, u_er_in)
+                    card_path = gerar_card_visual(
+                        ativo=ativo_p1,
+                        data=data_hoje,
+                        spot=u_spot_in, zce=u_zce_in,
+                        zae=u_zae_in, er=u_er_in,
+                        vje=vje_ipda_in, odtc_sem=odtc_sem_in,
+                        vies=calc_card.get('vies',''),
+                        rr=calc_card.get('rr_ratio', 1.0)
+                    )
+                    st.session_state['card_path'] = card_path
+                except Exception as e_card:
+                    st.warning(f"Card visual não gerado: {e_card}")
 
         analise_texto = st.text_area(
             "Boletim Proprietário Bilíngue",
@@ -784,6 +969,24 @@ with tab_analise:
                             mime="application/pdf",
                             use_container_width=True
                         )
+
+    # Download do Card Visual Social Media
+    if st.session_state.get('card_path') and os.path.exists(st.session_state.get('card_path', '')):
+        st.markdown("---")
+        st.subheader("📸 Card Visual para Redes Sociais (1080x1080)")
+        st.caption("Pronto para Instagram, Stories e WhatsApp. Não contém nenhuma referência à fonte de dados.")
+        with open(st.session_state['card_path'], 'rb') as f_card:
+            col_img, col_btn = st.columns([2, 1])
+            with col_img:
+                st.image(st.session_state['card_path'], use_container_width=True)
+            with col_btn:
+                st.download_button(
+                    "📥 BAIXAR CARD SOCIAL MEDIA (PNG)",
+                    data=f_card,
+                    file_name=f"GenilTrader_Card_{data_hoje.replace('/', '_')}.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
 
     if bt_processar:
         if not analise_texto.strip():
@@ -833,7 +1036,104 @@ with tab_analise:
                 st.success("🔥 BOLETIM PT E BOLETIM EN GERADOS COM SUCESSO!")
 
 # -----------------------------------------------------------------------------
-# ABA 2: AUDITORIA DE PERFORMANCE & BASE DE DADOS
+# ABA 2: COLETA PRIVADA — IMAGENS NUNCA VÃO AO RELATÓRIO
+# -----------------------------------------------------------------------------
+with tab_coleta:
+    st.subheader("🔍 Módulo de Coleta Privada — Leitura de Referência")
+    st.warning("""
+    ⚠️ **ZONA RESTRITA — SOMENTE PARA USO INTERNO**
+    As imagens carregadas aqui são usadas APENAS para leitura automática de valores pela IA.
+    Elas NUNCA são armazenadas permanentemente nem aparecem em nenhum relatório ou PDF gerado.
+    """)
+    
+    col_col1, col_col2 = st.columns([1,1])
+    
+    with col_col1:
+        st.markdown("##### 📎 Carregar Print de Referência (Coleta Interna)")
+        st.caption("Faça upload do seu print de referência dos dados de opções. A IA extrai os valores automaticamente.")
+        
+        arquivo_coleta = st.file_uploader(
+            "Upload do print de dados de referência (uso interno)",
+            type=["png", "jpg", "jpeg"],
+            key="upload_coleta_privada",
+            help="Este arquivo é usado APENAS para leitura de valores. NUNCA aparecerá no relatório."
+        )
+        
+        if arquivo_coleta:
+            st.image(arquivo_coleta, caption="Print de referência (não vai ao relatório)", use_container_width=True)
+            
+            if gemini_key and HAS_GENAI:
+                if st.button("🤖 EXTRAIR VALORES AUTOMATICAMENTE (IA)", use_container_width=True):
+                    with st.spinner("IA lendo os valores numéricos da imagem..."):
+                        arquivo_coleta.seek(0)
+                        dados_extraidos = extrair_valores_de_imagem(arquivo_coleta, gemini_key)
+                        if dados_extraidos and 'erro' not in dados_extraidos:
+                            st.session_state['dados_extraidos'] = dados_extraidos
+                            st.success("✅ Valores extraídos com sucesso! Copie os valores abaixo para os campos da barra lateral.")
+                        elif dados_extraidos and 'erro' in dados_extraidos:
+                            st.error(f"Erro na extração: {dados_extraidos['erro']}")
+                        else:
+                            st.warning("Não foi possível extrair os valores. Verifique a imagem.")
+            else:
+                st.info("Configure a chave Gemini API na barra lateral para habilitar a extração automática.")
+    
+    with col_col2:
+        st.markdown("##### 📊 Valores Extraídos (Referência Interna)")
+        
+        dados = st.session_state.get('dados_extraidos', {})
+        
+        if dados:
+            st.markdown("**Valores lidos pela IA da imagem de referência:**")
+            
+            cw = dados.get('call_wall', None)
+            pw = dados.get('put_wall', None)
+            zg = dados.get('zero_gamma', None)
+            sp = dados.get('spot', None)
+            
+            # Mostrar em cards internos
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.metric("Call Wall → Z-CE", f"{cw}" if cw else "N/A")
+                st.metric("Zero Gamma → ER", f"{zg}" if zg else "N/A")
+            with col_b:
+                st.metric("Put Wall → Z-AE", f"{pw}" if pw else "N/A")
+                st.metric("Spot Lido", f"{sp}" if sp else "N/A")
+                
+            st.info("""💡 **Como usar estes valores:**
+            \n1. Copie o **Call Wall** → cole em **Z-CE** na barra lateral
+            \n2. Copie o **Put Wall** → cole em **Z-AE** na barra lateral
+            \n3. Copie o **Zero Gamma** → cole em **ER** na barra lateral
+            \n4. Copie o **Spot** → cole em **Preço Ajuste/Spot** na barra lateral
+            \n5. O app converte automaticamente para a escala do seu CFD!""")
+            
+            if st.button("🗑️ Limpar Dados Extraídos", use_container_width=True):
+                st.session_state['dados_extraidos'] = {}
+                st.rerun()
+        else:
+            st.info("Carregue um print de referência e clique em 'Extrair Valores' para ver os dados aqui.")
+        
+        # Histórico de snapshots
+        st.markdown("---")
+        st.markdown("##### 🕐 Histórico de Snapshots Diários")
+        if os.path.exists(SNAPSHOT_FILE):
+            try:
+                with open(SNAPSHOT_FILE, 'r', encoding='utf-8') as f:
+                    snaps = json.load(f)
+                if snaps:
+                    df_snaps = pd.DataFrame(snaps)
+                    st.dataframe(df_snaps[['timestamp','ativo','zce','zae','er','vje']].tail(10), use_container_width=True)
+                    with open(SNAPSHOT_FILE, 'rb') as f_down:
+                        st.download_button("📥 Exportar Histórico de Snapshots (JSON)", data=f_down,
+                            file_name="snapshots_geniltrader.json", mime="application/json", use_container_width=True)
+                else:
+                    st.info("Nenhum snapshot salvo ainda.")
+            except Exception:
+                st.info("Nenhum snapshot salvo ainda.")
+        else:
+            st.info("Os snapshots são salvos automaticamente ao gerar relatórios.")
+
+# -----------------------------------------------------------------------------
+# ABA 3: AUDITORIA DE PERFORMANCE & BASE DE DADOS
 # -----------------------------------------------------------------------------
 with tab_auditoria:
     st.subheader("📈 Auditoria de Performance & Banco de Dados de Confluência")
@@ -889,21 +1189,164 @@ with tab_auditoria:
             st.warning("Nenhum trade registrado ainda.")
 
 # -----------------------------------------------------------------------------
-# ABA 3: MANUAL DE OPERAÇÃO & DIRETRIZES QUANT
+# ABA 4: MANUAL DE OPERAÇÃO, GLOSSÁRIO E GUIA DIÁRIO
 # -----------------------------------------------------------------------------
 with tab_manual:
-    st.header("📖 Manual Operacional e Diretrizes Institucionais GenilTrader [▲]")
-    
-    st.markdown("""
-    ### 🔑 1. Como Obter a Chave Gratuita do Google Gemini
-    Acesse o **Google AI Studio** ([https://aistudio.google.com/](https://aistudio.google.com/)), crie uma API key e insira no campo da barra lateral.
+    st.header("📖 Manual Operacional, Glossário e Guia de Rotina Diária — GenilTrader [▲]")
 
-    ---
+    sec1, sec2, sec3 = st.tabs(["📋 Rotina Diária", "🔤 Glossário de Nomenclatura", "🔑 API & Configuração"])
 
-    ### 🎯 2. Arquitetura de Regiões e Sigilo Operacional
-    - **Z-CE (Zona de Contração Executiva)**: Barreira teto onde grandes tesourarias posicionam travas institucionais.
-    - **Z-AE (Zona de Absorção Executiva)**: Suporte estrutural de compras de proteção.
-    - **ER (Eixo de Rotação Algorítmico)**: Ponto de equilíbrio justo (Fair Value).
-    - **VJE (Vetor de Janelas Estruturais IPDA)**: Varredura de liquidez em janelas temporais fractais (Draw on Liquidity).
-    - **Níveis Secundários de Volatilidade Semanal**: Barreiras complementares de desvio estatístico.
-    """)
+    with sec1:
+        st.markdown("""
+## 🗓️ GUIA DE ROTINA DIÁRIA — PASSO A PASSO
+
+> Siga este roteiro todos os dias antes da abertura de NY para gerar e publicar o Boletim Alpha GenilTrader [▲].
+
+---
+
+### ⏰ ETAPA 1 — Coleta dos Níveis (09h30 – 10h30 BRT)
+
+1. Acesse seu site de referência de dados de opções
+2. Anote os seguintes valores do **ativo principal (ex: Nasdaq / QQQ)**:
+   - 📌 **Call Wall** (resistência principal) → vai virar Z-CE
+   - 📌 **Put Wall** (suporte principal) → vai virar Z-AE
+   - 📌 **Zero Gamma / Gamma Flip** (equilíbrio) → vai virar ER
+   - 📌 **Preço atual / Spot** do ativo
+   - 📌 **Máxima e Mínima esperada** → viram Fronteira Alfa e Ômega
+3. Repita para o **ativo secundário (ex: S&P 500 / SPY)**
+4. Anote os **Níveis de Volatilidade Semanal** do seu indicador ODTC
+5. Anote os pontos de liquidez do seu **IPDA** (topos e fundos de janelas anteriores)
+
+---
+
+### 🖥️ ETAPA 2 — Abrir o App e Inserir os Dados (10h30 – 11h00 BRT)
+
+1. Abra o terminal e execute: `streamlit run app.py`
+2. Na **barra lateral**, configure:
+   - **Data da Sessão** → data atual
+   - **Classe de Ativo** → Índices / CFDs (USTEC / US500)
+3. No **Painel de Coleta & Conversor Sigiloso**:
+   - Cole o **Call Wall** no campo `Z-CE (Resistência)`
+   - Cole o **Put Wall** no campo `Z-AE (Suporte)`
+   - Cole o **Zero Gamma** no campo `ER (Eixo Rotação)`
+   - Cole o **Spot** no campo `Preço Ajuste/Spot`
+   - Cole as fronteiras nos campos `Fronteira Alfa` e `Fronteira Ômega`
+4. Em **Níveis Complementares & Secundários**:
+   - Cole o ponto IPDA no campo `VJE (Vetor Janelas IPDA)`
+   - Cole o nível semanal ODTC no campo `Nível Secundário Volatilidade Semanal`
+5. Selecione o **Filtro de Pressão Macroeconômico** (Neutro/Comprador/Vendedor)
+
+> 💡 **Dica**: O app converte automaticamente os valores para a escala do USTEC/US500.
+
+---
+
+### 📸 ETAPA 3 — Capturar Prints Limpos dos Gráficos (10h45 – 11h10 BRT)
+
+1. Abra o **TradingView** ou **MetaTrader**
+2. Configure o gráfico do ativo operado (USTEC, US500, etc.)
+3. **Remova todos os indicadores** da tela (deixe APENAS as velas)
+4. Capture 2 prints:
+   - **Print 1**: Gráfico Diário ou Semanal (contexto macro)
+   - **Print 2**: Gráfico de 15 minutos (posição atual do preço)
+5. ⚠️ **NUNCA capture prints do site de dados de opções** — isso expõe a fonte
+
+---
+
+### 🤖 ETAPA 4 — Gerar a Análise e o Relatório (11h10 – 11h30 BRT)
+
+1. Na aba **"📝 Análise & Gerador Quant"**, clique em **"GERAR ANÁLISE POR IA"**
+2. Carregue os prints dos gráficos na **galeria de imagens**
+3. Aguarde a geração automática dos PDFs (PT e EN)
+4. O app também gera automaticamente:
+   - 📊 **Snapshot diário** (salvo internamente com timestamp)
+   - 📸 **Card visual 1080x1080** para Instagram/WhatsApp
+5. Revise o boletim no campo de texto e faça ajustes se necessário
+
+---
+
+### 📲 ETAPA 5 — Publicação (11h30 BRT ou conforme estratégia)
+
+1. Baixe o **Card Visual PNG** (botão na área de análise)
+2. Baixe os **PDFs PT e EN** (barra lateral ou botões da aba de análise)
+3. Publique o **card** nas redes sociais (Instagram, Twitter/X, WhatsApp)
+4. Envie os **PDFs** para o canal/grupo de assinantes
+5. Registre o resultado do dia na aba **"📈 Auditoria"** ao final do pregão
+
+---
+
+### ⏰ Resumo do Horário Ideal
+
+| Horário BRT | Ação |
+| :--- | :--- |
+| 09h30 – 10h30 | Coleta dos níveis de opções |
+| 10h30 – 11h00 | Inserção dos dados no app |
+| 10h45 – 11h10 | Captura de prints limpos dos gráficos |
+| 11h10 – 11h30 | Geração da análise e relatório |
+| 11h30+ | Publicação nas redes e envio aos assinantes |
+        """)
+
+    with sec2:
+        st.markdown("""
+## 🔤 GLOSSÁRIO COMPLETO DE NOMENCLATURA PROPRIETÁRIA GenilTrader [▲]
+
+> Use este glossário para nunca se perder nos termos. À esquerda: o nome real da fonte. À direita: nosso nome exclusivo e seu significado operacional.
+
+---
+
+### Correspondência de Termos (Referência Interna)
+
+| 🔒 Nossa Nomenclatura | Correspondência Real (NUNCA use publicamente) | O que representa na prática |
+| :--- | :--- | :--- |
+| **Z-CE** | Call Wall | Barreira de resistência teto onde institucionais vendem opções de compra (calls). Preço tende a desacelerar ou reverter ao testar este nível. |
+| **Z-AE** | Put Wall | Barreira de suporte piso onde institucionais vendem opções de venda (puts). Preço tende a ser absorvido ou reverter ao testar este nível. |
+| **ER** | Zero Gamma / Gamma Flip | Ponto neutro de equilíbrio. Acima = market makers compram quedas (bullish). Abaixo = market makers vendem altas (bearish). |
+| **Fronteira Alfa** | Overnight High / Máxima esperada | Limite superior de volatilidade esperada para a sessão. |
+| **Fronteira Ômega** | Overnight Low / Mínima esperada | Limite inferior de volatilidade esperada para a sessão. |
+| **VJE** | IPDA Lookback / Draw on Liquidity | Pontos de liquidez (topos e fundos) de janelas temporais anteriores que o preço tende a buscar (varredura). |
+| **Níveis Secundários de Volatilidade Semanal** | ODTC (regra CME) | Desvios percentuais de volatilidade calculados com base no preço de fechamento semanal. |
+| **VAE** | Divergência SMT / Correlação | Quando dois ativos correlacionados (ex: USTEC e US500) divergem na direção, sinalizando manipulação ou falso rompimento. |
+| **Vela de Absorção Crítica** | Candle de volume / GVF candle laranja | Candle que mostra absorção massiva de ordens em uma zona institucional. |
+| **Gatilho de Ignição** | Candle de volume ou reversão | Vela que confirma o início de um movimento direcional a partir de uma zona. |
+
+---
+
+### Regimes de Preço
+
+| Situação do Preço | Regime | Viés Operacional |
+| :--- | :--- | :--- |
+| Preço **acima do ER** | 🟢 Regime Comprador | Buscar compras em recuos rumo à Z-CE |
+| Preço **abaixo do ER** | 🔴 Regime Vendedor | Buscar vendas em repiques rumo à Z-AE |
+| Preço **dentro de ±0.3% do ER** | 🟡 Regime Neutro | Aguardar rompimento e confirmação do lado |
+
+---
+
+### Como Marcar no Gráfico
+
+| Região | Cor da Linha | Tipo | Ação Esperada |
+| :--- | :--- | :--- | :--- |
+| **ER** | 🟡 Amarelo Ouro | Horizontal sólida | Ponto de equilíbrio — divisor de viés |
+| **Z-CE** | 🔴 Vermelho | Horizontal sólida | Teto institucional — exaustão compradora |
+| **Z-AE** | 🟢 Verde | Horizontal sólida | Piso institucional — absorção vendedora |
+| **Fronteira Alfa** | 🟣 Roxo tracejado | Horizontal tracejada | Limite máximo de volatilidade |
+| **Fronteira Ômega** | 🟣 Roxo tracejado | Horizontal tracejada | Limite mínimo de volatilidade |
+| **VJE** | 🔵 Azul ciano | Horizontal tracejada | Alvo de varredura de liquidez |
+| **Nível Secundário** | ⚪ Cinza claro | Horizontal fina | Barreira estatística complementar |
+        """)
+
+    with sec3:
+        st.markdown("""
+## 🔑 Configuração da API Gemini (IA Gratuita)
+
+1. Acesse: [https://aistudio.google.com/](https://aistudio.google.com/)
+2. Faça login com conta Google
+3. Clique em **"Get API key"** → **"Create API key"**
+4. Copie o código gerado (começa com `AIzaSy...`)
+5. Cole no campo **"Gemini API Key"** na barra lateral do app
+
+### Para uso permanente (Streamlit Cloud):
+- Adicione nos *Secrets* do projeto: `GEMINI_API_KEY = "sua-chave"`
+
+### Sem a chave:
+- O app funciona normalmente com o **Motor Quant Nativo** (offline)
+- A extração automática de valores da aba de coleta privada fica indisponível
+        """)
