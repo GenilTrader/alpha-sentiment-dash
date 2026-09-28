@@ -179,16 +179,17 @@ def converter_dados_coleta_para_cfd(ativo_alvo, spot_in, zce_in, zae_in, er_in, 
 # -----------------------------------------------------------------------------
 SNAPSHOT_FILE = "snapshots_diarios.json"
 
-def salvar_snapshot(ativo, spot, zce, zae, er, alfa, omega, vje, odtc_sem, macro):
+def salvar_snapshot(ativo, spot, zce, zae, er, alfa, omega, vje, odtc_sem, macro, vix):
     """Salva um snapshot dos níveis do dia com timestamp exato para histórico."""
     snapshot = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "data": datetime.datetime.now().strftime("%d/%m/%Y"),
         "ativo": ativo,
-        "spot": spot, "zce": zce, "zae": zae, "er": er,
+        "preco_ajuste": spot, "zce": zce, "zae": zae, "er": er,
         "alfa": alfa, "omega": omega,
         "vje": vje, "odtc_semanal": odtc_sem,
-        "macro": macro
+        "macro": macro,
+        "vix": vix
     }
     historico = []
     if os.path.exists(SNAPSHOT_FILE):
@@ -281,7 +282,7 @@ def gerar_card_visual(ativo, data, spot, zce, zae, er, vje, odtc_sem, vies, rr):
     # Nível secundário
     draw.rectangle([(54, y_pos), (W-54, y_pos+1)], fill='#1E293B')
     draw.text((70, y_pos+14), f"Nível Secundário Semanal:  {odtc_sem if odtc_sem else 'N/A'}", font=fnt_small, fill='#64748B')
-    draw.text((70, y_pos+44), f"R:R Estimado:  1:{rr}   |   Spot:  {spot}", font=fnt_small, fill='#64748B')
+    draw.text((70, y_pos+44), f"R:R Estimado:  1:{rr}   |   Preço Ajuste:  {spot}", font=fnt_small, fill='#64748B')
 
     # Rodapé
     draw.rectangle([(54, H-120), (W-54, H-119)], fill='#1E293B')
@@ -311,10 +312,10 @@ def extrair_valores_de_imagem(imagem_file, api_key):
         1. Call Wall (nível de resistência superior)
         2. Put Wall (nível de suporte inferior)  
         3. Zero Gamma / Gamma Flip (ponto de equilíbrio)
-        4. Spot / Preço atual
+        4. Preço atual / Ajuste
         
         Retorne APENAS um JSON puro sem markdown, no seguinte formato exato:
-        {"call_wall": 000.00, "put_wall": 000.00, "zero_gamma": 000.00, "spot": 000.00}
+        {"call_wall": 000.00, "put_wall": 000.00, "zero_gamma": 000.00, "preco_ajuste": 000.00}
         
         Se não encontrar algum valor, coloque null. Não inclua texto adicional.
         """
@@ -390,7 +391,7 @@ def calcular_regioes_e_probabilidade(spot, zce, zae, er, alfa=None, omega=None):
 # -----------------------------------------------------------------------------
 # MOTOR DE IA INSTITUCIONAL (DIRETOR QUANT GLOBAL & ARQUITETO CHEFE)
 # -----------------------------------------------------------------------------
-def gerar_analise_ia(ativo_nome, spot, zce, zae, er, alfa, omega, vje_ipda, odtc_semanal, odtc_diario, macro_filtro, api_key=None, list_images=None):
+def gerar_analise_ia(ativo_nome, spot, zce, zae, er, alfa, omega, vje_ipda, odtc_semanal, odtc_diario, macro_filtro, vix_val, api_key=None, list_images=None):
     """
     Gera o relatório analítico bilingue [PT] e [EN] agindo rigorosamente como
     Diretor Quant Global de Hedge Fund com sigilo industrial absoluto.
@@ -402,82 +403,88 @@ Você é o Diretor Quant Global & Arquiteto Chefe da marca global GenilTrader [�
 Seu objetivo é gerar relatórios de mercado de altíssima exclusividade e apelo institucional, protegendo o nosso segredo industrial.
 
 SUA TAREFA:
-Gerar uma análise técnica e institucional cirúrgica para o ativo: {ativo_nome}.
+Gerar uma análise técnica e institucional cirúrgica e SUPER DETALHADA para o ativo: {ativo_nome}.
+O texto DEVE OBRIGATORIAMENTE utilizar os valores exatos passados no contexto. Não utilize valores genéricos ou fixos pre-programados.
 
 DADOS CONTEXTUAIS DA SESSÃO:
 - Ativo Operado: {ativo_nome}
-- Preço Spot / Ajuste Inicial: {spot}
-- Z-CE (Zona de Contração Executiva): {zce} (Distância: {calc.get('dist_zce_pct', 0)}% | Probabilidade de Teste: {calc.get('prob_zce', 0)}%)
-- Z-AE (Zona de Absorção Executiva): {zae} (Distância: {calc.get('dist_zae_pct', 0)}% | Probabilidade de Teste: {calc.get('prob_zae', 0)}%)
+- Preço de Ajuste (Atual): {spot}
+- Z-CE (Zona de Contração Executiva): {zce} (Probabilidade de Teste: {calc.get('prob_zce', 0)}%)
+- Z-AE (Zona de Absorção Executiva): {zae} (Probabilidade de Teste: {calc.get('prob_zae', 0)}%)
 - ER (Eixo de Rotação Algorítmico): {er} (Viés Atual: {calc.get('vies', 'Neutro')})
 - Fronteira Alfa (Máxima): {alfa if alfa else 'N/A'}
 - Fronteira Ômega (Mínima): {omega if omega else 'N/A'}
-- VJE - Vetor de Janelas Estruturais (Liquidez IPDA / Swing Target): {vje_ipda if vje_ipda else 'Níveis de Varredura Intraday'}
+- VJE - Vetor de Janelas Estruturais (Liquidez IPDA): {vje_ipda if vje_ipda else 'Níveis de Varredura Intraday'}
 - Nível Secundário de Volatilidade Semanal: {odtc_semanal if odtc_semanal else 'N/A'}
 - Nível Secundário de Volatilidade Diário (Abertura NY): {odtc_diario if odtc_diario else 'N/A'}
 - Filtro de Pressão Macroeconômica: {macro_filtro}
+- VIX (Índice de Volatilidade/Medo): {vix_val if vix_val else 'N/A'}
 - Relação Risco:Retorno Estimada (R:R): 1:{calc.get('rr_ratio', 1.0)}
 
 PROIBIÇÕES ABSOLUTAS (SIGILO INDUSTRIAL):
-Está TERMINANTEMENTE PROIBIDO utilizar os termos de varejo públicos ou expor fontes de dados: "GEX", "Gamma Exposure", "Call Wall", "Put Wall", "Zero Gamma", "Overnight High/Low", "QQQ", "SPY", "ODTC", "CME" ou "IPDA".
+Está TERMINANTEMENTE PROIBIDO utilizar os termos de varejo públicos ou expor fontes de dados: "GEX", "Gamma Exposure", "Call Wall", "Put Wall", "Zero Gamma", "Overnight High/Low", "QQQ", "SPY", "ODTC", "CME", "IPDA", ou "Spot".
 
 NOMENCLATURA PROPRIETÁRIA OBRIGATÓRIA:
 - Call Wall -> Z-CE (Zona de Contração Executiva / Executive Contraction Zone)
 - Put Wall -> Z-AE (Zona de Absorção Executiva / Executive Absorption Zone)
 - Zero Gamma -> ER (Eixo de Rotação / Rotation Axis)
+- Preço Atual/Spot -> Preço de Ajuste (Settlement Price)
 - High/Low -> Fronteira Alfa (Máxima) e Fronteira Ômega (Mínima) / Alpha & Omega Frontiers
 - Candles Laranjas/Volume -> Gatilhos de Ignição / Velas de Absorção Crítica (Critical Absorption Candles)
 - Divergência SMT/Preço -> VAE (Vetor de Arbitragem Estatística / Statistical Arbitrage Vector)
 - Captura de Liquidez IPDA -> VJE (Vetor de Janelas Estruturais / Structural Window Vector)
 - ODTC -> Níveis Secundários de Volatilidade Semanal / Zonas Complementares de Suporte e Resistência
 
-FORMATO EXATO EXIGIDO PARA A RESPOSTA (Copie a estrutura com [PT] e [EN]):
+FORMATO EXATO EXIGIDO PARA A RESPOSTA:
+(Siga esta exata estrutura. Gere TUDO em Português sob a tag [PT], depois TUDO em Inglês sob a tag [EN]).
 
-## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO / PRICE REGIME ARCHITECTURE
 [PT]
-(Escreva a análise detalhada em Português sobre o comportamento projetado para {ativo_nome} na Z-CE, Z-AE, ER e a confluência com o VJE e os Níveis Secundários).
-[EN]
-(Escreva a mesma análise traduzida para o Inglês Institucional de Hedge Fund).
+## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE
+(Análise super detalhada do cenário atual para {ativo_nome}. Relacione o Preço de Ajuste ({spot}) com o ER ({er}), Z-CE ({zce}) e Z-AE ({zae}). Integre o impacto do VIX ({vix_val}) nas probabilidades de reversão ou continuidade de tendência.)
 
-## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM / EXHAUSTION ZONES & ARBITRAGE VECTORS
-[PT]
-(Instruções de como rastrear o VAE entre o {ativo_nome} e seu par correlacionado no gráfico intraday e a reação nas Fronteiras Alfa/Ômega e nos Níveis Secundários de Volatilidade).
-[EN]
-(As mesmas instruções em Inglês institucional).
+## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM
+(Instruções de como rastrear o VAE intraday e prever reações nas Fronteiras Alfa/Ômega e nos Níveis Secundários de Volatilidade Semanal ({odtc_semanal}).)
 
-## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA / EXECUTION RULES & ASYMMETRY
-[PT]
-(Regras estritas de gerenciamento de risco, confirmação por Velas de Absorção Crítica e invalidação técnica).
-[EN]
-(As mesmas regras em Inglês institucional).
+## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA
+(Regras estritas de gerenciamento de risco, utilizando R:R 1:{calc.get('rr_ratio', 1.0)}. Defina critérios para Gatilhos de Ignição e Invalidação Técnica.)
 
-## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO / CHART MAPPING & OPERATIONAL CONDUCT
-[PT]
-📌 O QUE MARCAR NO SEU GRÁFICO (TRADINGVIEW / METATRADER):
-- 🟡 LINHA AMARELA (Amarelo Ouro): ER (Eixo de Rotação) em {er} -> Divisor de águas principal da sessão.
-- 🔴 LINHA VERMELHA (Resistência / Teto): Z-CE (Zona de Contração Executiva) em {zce} -> Região de topo institucional.
-- 🟢 LINHA VERDE (Suporte / Piso): Z-AE (Zona de Absorção Executiva) em {zae} -> Região de suporte estrutural.
-- 🟣 LINHAS ROXAS TRACEJADAS: Fronteira Alfa ({alfa if alfa else 'N/A'}) e Fronteira Ômega ({omega if omega else 'N/A'}) -> Extremos de volatilidade.
-- 🔵 LINHA AZUL / CIANO: VJE (Vetor de Janelas Estruturais) em {vje_ipda if vje_ipda else 'Zonas de Liquidez'} -> Níveis primários de busca de liquidez.
-- ⚪ LINHAS CINZAS DISCRETAS: Níveis Secundários de Volatilidade Semanal em {odtc_semanal if odtc_semanal else 'N/A'} -> Barreiras estatísticas complementares.
+## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO (ATENÇÃO ASSINANTE)
+📌 PONTOS CRÍTICOS PARA INSERIR NO SEU GRÁFICO (TRADINGVIEW / METATRADER):
+- 🟡 LINHA AMARELA: ER em {er} (Eixo de Rotação - Divisor de Águas).
+- 🔴 LINHA VERMELHA: Z-CE em {zce} (Resistência Institucional).
+- 🟢 LINHA VERDE: Z-AE em {zae} (Suporte Institucional).
+- 🟣 LINHAS ROXAS TRACEJADAS: Alfa em {alfa if alfa else 'N/A'} e Ômega em {omega if omega else 'N/A'}.
+- 🔵 LINHA AZUL: VJE em {vje_ipda if vje_ipda else 'Zonas de Liquidez'} (Alvo Primário).
+- ⚪ LINHAS CINZAS: Secundário Semanal em {odtc_semanal if odtc_semanal else 'N/A'}.
 
 🎯 CONDUTA OPERACIONAL PASSO A PASSO:
-1. Ponto de Equilíbrio (ER {er}): Acima do ER = Viés Comprador rumo à Z-CE; Abaixo do ER = Viés Vendedor rumo à Z-AE.
-2. Reação no VJE ({vje_ipda if vje_ipda else 'Liquidez'}): Aguarde a varredura da liquidez e rejeição imediata com Vela de Absorção Crítica.
-3. Invalidação: Fechamento de candle cheio além de Alfa/Ômega invalida o plano operacional.
-[EN]
-📌 CHART MAPPING GUIDE (TRADINGVIEW / METATRADER):
-- 🟡 GOLDEN YELLOW LINE: ER (Rotation Axis) at {er} -> Core session equilibrium.
-- 🔴 RED LINE (Resistance / Ceiling): Z-CE (Executive Contraction Zone) at {zce} -> Top institutional boundary.
-- 🟢 GREEN LINE (Support / Floor): Z-AE (Executive Absorption Zone) at {zae} -> Deep structural support.
-- 🟣 PURPLE DASHED LINES: Alpha ({alfa if alfa else 'N/A'}) & Omega ({omega if omega else 'N/A'}) Frontiers -> Extreme volatility boundaries.
-- 🔵 CYAN LINE: VJE (Structural Window Vector) at {vje_ipda if vje_ipda else 'Liquidity Pools'} -> Primary liquidity targets.
-- ⚪ GREY DASHED LINES: Secondary Volatility Levels (Weekly) at {odtc_semanal if odtc_semanal else 'N/A'} -> Complementary statistical barriers.
+1. Regime {calc.get('vies', 'Neutro')}: Acima de {er} busque compra até {zce}. Abaixo busque venda até {zae}.
+2. Reação no VJE ({vje_ipda if vje_ipda else 'N/A'}): Varredura e rejeição pedem Gatilho de Ignição.
+3. Fator VIX ({vix_val}): (Dê uma orientação específica com base no VIX).
 
-🎯 OPERATIONAL EXECUTION STEP-BY-STEP:
-1. Equilibrium Point (ER {er}): Above ER = Bullish target Z-CE; Below ER = Bearish target Z-AE.
-2. VJE Reaction ({vje_ipda if vje_ipda else 'Liquidity'}): Monitor liquidity sweeps and immediate rejection with Critical Absorption Candles.
-3. Technical Invalidation: Full candle close beyond Alpha/Omega invalidates setup.
+[EN]
+## 🔒 1. PRICE REGIME AND VOLATILITY ARCHITECTURE
+(Detailed English analysis covering {ativo_nome}, Settlement Price {spot}, ER {er}, Z-CE {zce}, Z-AE {zae}, and VIX {vix_val} impact.)
+
+## ⚔️ 2. EXHAUSTION ZONES & ARBITRAGE VECTORS
+(Instructions on tracking VAE intraday and reacting to Alpha/Omega and Secondary Levels {odtc_semanal}.)
+
+## 🛡️ 3. EXECUTION RULES & ASYMMETRY
+(Risk rules with R:R 1:{calc.get('rr_ratio', 1.0)}. Critical Absorption Candle confirmation and technical invalidation.)
+
+## 🎯 4. CHART MAPPING GUIDE & OPERATIONAL CONDUCT (SUBSCRIBER ATTENTION)
+📌 CRITICAL POINTS TO MAP ON YOUR CHART:
+- 🟡 YELLOW LINE: ER at {er} (Rotation Axis).
+- 🔴 RED LINE: Z-CE at {zce} (Institutional Resistance).
+- 🟢 GREEN LINE: Z-AE at {zae} (Institutional Support).
+- 🟣 PURPLE DASHED: Alpha at {alfa if alfa else 'N/A'} & Omega at {omega if omega else 'N/A'}.
+- 🔵 CYAN LINE: VJE at {vje_ipda if vje_ipda else 'Liquidity Target'}.
+- ⚪ GREY DASHED: Weekly Secondary Level at {odtc_semanal if odtc_semanal else 'N/A'}.
+
+🎯 STEP-BY-STEP TACTICS:
+1. {calc.get('vies', 'Neutral')} Regime: Above {er} target {zce}; Below target {zae}.
+2. VJE Sweep ({vje_ipda if vje_ipda else 'N/A'}): Await Critical Absorption.
+3. VIX Factor ({vix_val}): (Specific rule based on VIX).
 """
 
     if api_key and HAS_GENAI:
@@ -512,52 +519,53 @@ FORMATO EXATO EXIGIDO PARA A RESPOSTA (Copie a estrutura com [PT] e [EN]):
     zae_prob = calc.get('prob_zae', 50)
 
     texto_nativo = f"""[PT]
-## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO / PRICE REGIME ARCHITECTURE
-O ativo {ativo_nome} opera sob o regime de {vies_str}. O Eixo de Rotação (ER) cravado em {er} atua como o principal ponto de equilíbrio algorítmico da sessão. A sustentação acima do ER mantém a probabilidade de {zce_prob}% para o teste da Z-CE (Zona de Contração Executiva) em {zce}, onde projeta-se forte absorção de ordens por parte das grandes tesourarias. Inversamente, a perda sustentada do ER acionará a distribuição de liquidez em direção à Z-AE (Zona de Absorção Executiva) em {zae} (probabilidade de {zae_prob}%). O VJE (Vetor de Janelas Estruturais) apontado em {vje_ipda if vje_ipda else 'Zonas Recentes'} atua como o principal alvo de varredura de liquidez.
+## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE
+O ativo {ativo_nome} opera sob o regime de {vies_str} com o Preço de Ajuste em {spot}. O Eixo de Rotação (ER) cravado em {er} atua como o principal divisor de águas algorítmico da sessão. A sustentação acima do ER mantém {zce_prob}% de probabilidade para teste da Z-CE em {zce}, onde projeta-se forte defesa das tesourarias. Inversamente, a perda sustentada do ER acionará liquidez rumo à Z-AE em {zae} ({zae_prob}% de probabilidade). O cenário de volatilidade (VIX: {vix_val}) deve ser monitorado em confluência com o VJE ({vje_ipda if vje_ipda else 'N/A'}).
 
-## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM / EXHAUSTION ZONES & ARBITRAGE VECTORS
-Aguardaremos o preço testar os limites das regiões institucionais (Fronteira Alfa {alfa if alfa else ''} ou Fronteira Ômega {omega if omega else ''}) ou os Níveis Secundários de Volatilidade Semanal ({odtc_semanal if odtc_semanal else 'N/A'}). O gatilho operacional de alta assimetria no gráfico intraday ocorrerá estritamente com o aparecimento de uma Vela de Absorção Crítica combinada com o acionamento do VAE (Vetor de Arbitragem Estatística) — caracterizado pela divergência do {ativo_nome} perante o filtro macroeconômico ({macro_filtro}).
+## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM
+Aguardaremos o teste das fronteiras institucionais (Alfa {alfa if alfa else ''} ou Ômega {omega if omega else ''}) ou nos Níveis Secundários ({odtc_semanal if odtc_semanal else 'N/A'}). O gatilho exige uma Vela de Absorção Crítica validando o VAE (divergência vs. macro).
 
-## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA / EXECUTION RULES & ASYMMETRY
-Mantenha o risco estritamente limitado com assimetria estimada de {rr_str}. A invalidação técnica da tese ocorrerá caso o preço confirme o fechamento de uma barra cheia além das zonas de exaustão demarcadas. Não persiga o preço fora das regiões operacionais proprietárias.
+## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA
+Mantenha o risco estritamente limitado com assimetria de {rr_str}. Fechamentos de barra cheia além das zonas demarcadas (Alfa/Ômega) invalidam a estrutura.
 
-## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO / CHART MAPPING & OPERATIONAL CONDUCT
-📌 O QUE MARCAR NO SEU GRÁFICO (TRADINGVIEW / METATRADER):
-- 🟡 LINHA AMARELA (Amarelo Ouro): ER (Eixo de Rotação) em {er} -> Divisor de águas (Acima do ER = Viés Comprador; Abaixo do ER = Viés Vendedor).
-- 🔴 LINHA VERMELHA (Resistência / Teto): Z-CE (Zona de Contração Executiva) em {zce} -> Região de topo. Procurar exaustão compradora para gatilhos de venda.
-- 🟢 LINHA VERDE (Suporte / Piso): Z-AE (Zona de Absorção Executiva) em {zae} -> Região de fundo. Procurar suporte por absorção de volume para gatilhos de compra.
-- 🟣 LINHAS ROXAS TRACEJADAS: Fronteira Alfa ({alfa if alfa else 'N/A'}) e Fronteira Ômega ({omega if omega else 'N/A'}) -> Extremos de volatilidade da sessão.
-- 🔵 LINHA AZUL / CIANO: VJE (Vetor de Janelas Estruturais IPDA) em {vje_ipda if vje_ipda else 'Zonas de Liquidez'}.
-- ⚪ LINHAS CINZAS TRACEJADAS: Níveis Secundários de Volatilidade Semanal em {odtc_semanal if odtc_semanal else 'N/A'}.
+## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO (ATENÇÃO ASSINANTE)
+📌 PONTOS CRÍTICOS PARA INSERIR NO SEU GRÁFICO (TRADINGVIEW/METATRADER):
+- 🟡 LINHA AMARELA (Amarelo Ouro): ER em {er} -> Divisor de águas.
+- 🔴 LINHA VERMELHA (Resistência): Z-CE em {zce} -> Região de topo.
+- 🟢 LINHA VERDE (Suporte): Z-AE em {zae} -> Região de fundo.
+- 🟣 LINHAS ROXAS TRACEJADAS: Alfa em {alfa if alfa else 'N/A'} e Ômega em {omega if omega else 'N/A'}.
+- 🔵 LINHA AZUL: VJE em {vje_ipda if vje_ipda else 'Zonas de Liquidez'}.
+- ⚪ LINHAS CINZAS: Nível Secundário Semanal em {odtc_semanal if odtc_semanal else 'N/A'}.
 
 🎯 CONDUTA OPERACIONAL PASSO A PASSO:
-1. Ponto de Equilíbrio (ER {er}): Se o preço estiver acima, busque compras nos recuos rumo à Z-CE ({zce}). Se estiver abaixo, busque vendas nos repiques rumo à Z-AE ({zae}).
-2. Reação na Z-CE ({zce}): Não compre no topo! Aguarde Vela de Absorção Crítica de 1min/5min para entrar vendido buscando o retorno ao ER.
-3. Reação na Z-AE ({zae}): Não venda no fundo! Aguarde absorção de ordens para entrar comprado buscando retorno ao ER.
-4. Invalidação: Fechamento de candle cheio além de Alfa/Ômega invalida o setup operacional.
+1. Ponto de Equilíbrio ({er}): Se acima, busque compras em recuos rumo à Z-CE ({zce}). Se abaixo, vendas nos repiques rumo à Z-AE ({zae}).
+2. Exaustão nas Zonas ({zce} / {zae}): Não opere o rompimento cego. Aguarde Gatilhos de Ignição confirmando rejeição.
+3. Fator VIX ({vix_val}): Extrema atenção à volatilidade em horários de abertura de NY.
 
 [EN]
-## 🔒 1. PRICE REGIME ARCHITECTURE
-The asset {ativo_nome} is trading under a {vies_str} regime. The Rotation Axis (ER) mapped at {er} serves as the core algorithmic equilibrium point for the session. Sustained price action above the ER maintains a {zce_prob}% probability of retesting the Z-CE (Executive Contraction Zone) at {zce}. The VJE (Structural Window Vector) at {vje_ipda if vje_ipda else 'Recent Pools'} serves as the primary liquidity sweep target.
+## 🔒 1. PRICE REGIME AND VOLATILITY ARCHITECTURE
+The asset {ativo_nome} is trading under a {vies_str} regime with the Settlement Price at {spot}. The Rotation Axis (ER) mapped at {er} serves as the core equilibrium point. Price action above the ER targets the Z-CE (Executive Contraction Zone) at {zce} ({zce_prob}% prob). Below ER targets Z-AE at {zae} ({zae_prob}% prob). Volatility context (VIX: {vix_val}) remains critical near the VJE ({vje_ipda if vje_ipda else 'N/A'}).
 
 ## ⚔️ 2. EXHAUSTION ZONES & ARBITRAGE VECTORS
-We will monitor price action near institutional boundary zones (Alpha Frontier {alfa if alfa else ''} / Omega Frontier {omega if omega else ''}) and Secondary Weekly Volatility Levels ({odtc_semanal if odtc_semanal else 'N/A'}). The execution trigger strictly requires a Critical Absorption Candle aligned with the Statistical Arbitrage Vector (VAE).
+Monitor price action near institutional boundary zones (Alpha {alfa if alfa else ''} / Omega {omega if omega else ''}) and Secondary Levels ({odtc_semanal if odtc_semanal else 'N/A'}). Execution requires a Critical Absorption Candle aligned with the VAE.
 
 ## 🛡️ 3. EXECUTION RULES & ASYMMETRY
-Keep risk strictly contained with an estimated R:R ratio of {rr_str}. Technical invalidation is mandatory if a full candle body closes beyond the defined exhaustion zones.
+Keep risk contained with an R:R ratio of {rr_str}. Technical invalidation requires a full candle body close beyond exhaustion zones.
 
-## 🎯 4. CHART MAPPING GUIDE & OPERATIONAL CONDUCT
-📌 CHART MAPPING GUIDE (TRADINGVIEW / METATRADER):
-- 🟡 GOLDEN YELLOW LINE: ER (Rotation Axis) at {er} -> Session Equilibrium.
-- 🔴 RED LINE (Resistance / Ceiling): Z-CE (Executive Contraction Zone) at {zce}.
-- 🟢 GREEN LINE (Support / Floor): Z-AE (Executive Absorption Zone) at {zae}.
-- 🟣 PURPLE DASHED LINES: Alpha ({alfa if alfa else 'N/A'}) & Omega ({omega if omega else 'N/A'}) Frontiers.
-- 🔵 CYAN LINE: VJE (Structural Window Vector) at {vje_ipda if vje_ipda else 'Liquidity Target'}.
-- ⚪ GREY DASHED LINES: Secondary Weekly Volatility Levels at {odtc_semanal if odtc_semanal else 'N/A'}.
+## 🎯 4. CHART MAPPING GUIDE & OPERATIONAL CONDUCT (SUBSCRIBER ATTENTION)
+📌 CRITICAL POINTS TO MAP ON YOUR CHART:
+- 🟡 GOLDEN YELLOW LINE: ER at {er}.
+- 🔴 RED LINE: Z-CE at {zce}.
+- 🟢 GREEN LINE: Z-AE at {zae}.
+- 🟣 PURPLE DASHED: Alpha ({alfa if alfa else 'N/A'}) & Omega ({omega if omega else 'N/A'}).
+- 🔵 CYAN LINE: VJE at {vje_ipda if vje_ipda else 'Liquidity Target'}.
+- ⚪ GREY DASHED: Weekly Secondary Level at {odtc_semanal if odtc_semanal else 'N/A'}.
 
-🎯 OPERATIONAL EXECUTION STEP-BY-STEP:
-1. Equilibrium Point (ER {er}): Above ER = Long towards Z-CE; Below ER = Short towards Z-AE.
-2. Invalidation: Full candle body close beyond Alpha/Omega invalidates setup."""
+🎯 STEP-BY-STEP TACTICS:
+1. Equilibrium ({er}): Above ER = Long towards Z-CE ({zce}); Below ER = Short towards Z-AE ({zae}).
+2. Exhaustion ({zce} / {zae}): Await Critical Absorption Candles before fading the edges.
+3. VIX Factor ({vix_val}): Monitor spikes strictly at NY open.
+"""
 
     return texto_nativo
 
@@ -713,7 +721,7 @@ st.sidebar.caption("Cole os valores brutos coletados nos prints. O app converter
 
 col_conv1, col_conv2 = st.sidebar.columns(2)
 with col_conv1:
-    in_spot = st.text_input("Preço Ajuste/Spot", "$520.30")
+    in_spot = st.text_input("Preço de Ajuste (Atual)", "$520.30")
     in_zce  = st.text_input("Z-CE (Resistência)", "$525.00")
     in_zae  = st.text_input("Z-AE (Suporte)", "$510.00")
 with col_conv2:
@@ -735,13 +743,14 @@ odtc_dia_in = st.sidebar.text_input("Nível Secundário Volatilidade Diária (NY
 
 # Parâmetros Ativo Secundário
 st.sidebar.markdown(f"**Parâmetros: {ativo_p2}**")
-s_spot_in = st.sidebar.text_input(f"{ativo_p2} — Preço Spot", "$5,720.00")
+s_spot_in = st.sidebar.text_input(f"{ativo_p2} — Preço de Ajuste", "$5,720.00")
 s_zce_in  = st.sidebar.text_input(f"{ativo_p2} — Z-CE", "$5,750.00")
 s_zae_in  = st.sidebar.text_input(f"{ativo_p2} — Z-AE", "$5,680.00")
 s_er_in   = st.sidebar.text_input(f"{ativo_p2} — ER", "$5,710.00")
 
-st.sidebar.subheader("📺 Vetor Macroeconômico")
+st.sidebar.subheader("📺 Variáveis Macroeconômicas")
 vetor_macro_pt = st.sidebar.selectbox("Filtro de Pressão (PT)", ["Regime de Neutralidade / Lateral", "Pressão Vendedora Ativa", "Pressão Compradora Ativa"])
+vix_val_in = st.sidebar.text_input("Índice VIX (Volatilidade/Medo)", "15.40")
 
 st.sidebar.markdown("---")
 bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
@@ -869,6 +878,7 @@ with tab_analise:
                     odtc_semanal=odtc_sem_in,
                     odtc_diario=odtc_dia_in,
                     macro_filtro=vetor_macro_pt,
+                    vix_val=vix_val_in,
                     api_key=gemini_key,
                     list_images=st.session_state.get('uploaded_files_cache', None)
                 )
@@ -920,7 +930,7 @@ with tab_analise:
                     ativo=ativo_p1, spot=u_spot_in, zce=u_zce_in,
                     zae=u_zae_in, er=u_er_in, alfa=u_alfa_in,
                     omega=u_omega_in, vje=vje_ipda_in,
-                    odtc_sem=odtc_sem_in, macro=vetor_macro_pt
+                    odtc_sem=odtc_sem_in, macro=vetor_macro_pt, vix=vix_val_in
                 )
 
                 # MÓDULO 3: Gerar card visual para redes sociais
@@ -1103,7 +1113,7 @@ with tab_coleta:
             \n1. Copie o **Call Wall** → cole em **Z-CE** na barra lateral
             \n2. Copie o **Put Wall** → cole em **Z-AE** na barra lateral
             \n3. Copie o **Zero Gamma** → cole em **ER** na barra lateral
-            \n4. Copie o **Spot** → cole em **Preço Ajuste/Spot** na barra lateral
+            \n4. Copie o **Preço Ajuste** → cole em **Preço de Ajuste (Atual)** na barra lateral
             \n5. O app converte automaticamente para a escala do seu CFD!""")
             
             if st.button("🗑️ Limpar Dados Extraídos", use_container_width=True):
@@ -1211,7 +1221,7 @@ with tab_manual:
    - 📌 **Call Wall** (resistência principal) → vai virar Z-CE
    - 📌 **Put Wall** (suporte principal) → vai virar Z-AE
    - 📌 **Zero Gamma / Gamma Flip** (equilíbrio) → vai virar ER
-   - 📌 **Preço atual / Spot** do ativo
+   - 📌 **Preço atual / Ajuste** do ativo
    - 📌 **Máxima e Mínima esperada** → viram Fronteira Alfa e Ômega
 3. Repita para o **ativo secundário (ex: S&P 500 / SPY)**
 4. Anote os **Níveis de Volatilidade Semanal** do seu indicador ODTC
@@ -1229,7 +1239,7 @@ with tab_manual:
    - Cole o **Call Wall** no campo `Z-CE (Resistência)`
    - Cole o **Put Wall** no campo `Z-AE (Suporte)`
    - Cole o **Zero Gamma** no campo `ER (Eixo Rotação)`
-   - Cole o **Spot** no campo `Preço Ajuste/Spot`
+   - Cole o **Preço de Ajuste** no campo `Preço de Ajuste (Atual)`
    - Cole as fronteiras nos campos `Fronteira Alfa` e `Fronteira Ômega`
 4. Em **Níveis Complementares & Secundários**:
    - Cole o ponto IPDA no campo `VJE (Vetor Janelas IPDA)`
@@ -1340,13 +1350,3 @@ with tab_manual:
 1. Acesse: [https://aistudio.google.com/](https://aistudio.google.com/)
 2. Faça login com conta Google
 3. Clique em **"Get API key"** → **"Create API key"**
-4. Copie o código gerado (começa com `AIzaSy...`)
-5. Cole no campo **"Gemini API Key"** na barra lateral do app
-
-### Para uso permanente (Streamlit Cloud):
-- Adicione nos *Secrets* do projeto: `GEMINI_API_KEY = "sua-chave"`
-
-### Sem a chave:
-- O app funciona normalmente com o **Motor Quant Nativo** (offline)
-- A extração automática de valores da aba de coleta privada fica indisponível
-        """)
