@@ -1350,3 +1350,13 @@ with tab_manual:
 1. Acesse: [https://aistudio.google.com/](https://aistudio.google.com/)
 2. Faça login com conta Google
 3. Clique em **"Get API key"** → **"Create API key"**
+4. Copie o código gerado (começa com `AIzaSy...`)
+5. Cole no campo **"Gemini API Key"** na barra lateral do app
+
+### Para uso permanente (Streamlit Cloud):
+- Adicione nos *Secrets* do projeto: `GEMINI_API_KEY = "sua-chave"`
+
+### Sem a chave:
+- O app funciona normalmente com o **Motor Quant Nativo** (offline)
+- A extração automática de valores da aba de coleta privada fica indisponível
+        """)
