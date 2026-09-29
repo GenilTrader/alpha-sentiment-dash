@@ -6,6 +6,13 @@ import io
 import json
 from PIL import Image, ImageDraw, ImageFont
 
+# Importação condicional do yfinance para captura do VIX em tempo real
+try:
+    import yfinance as yf
+    HAS_YF = True
+except ImportError:
+    HAS_YF = False
+
 # Importação condicional do ReportLab para PDF
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
@@ -173,6 +180,243 @@ def converter_dados_coleta_para_cfd(ativo_alvo, spot_in, zce_in, zae_in, er_in, 
     c_omega= round(omega * factor, 2) if omega else None
 
     return f"${c_spot:,.2f}", f"${c_zce:,.2f}", f"${c_zae:,.2f}", f"${c_er:,.2f}", f"${c_alfa:,.2f}" if c_alfa else "", f"${c_omega:,.2f}" if c_omega else ""
+
+# =============================================================================
+# MÓDULO VIX QUANT — CAPTURA AUTOMÁTICA DE VOLATILIDADE EM TEMPO REAL
+# =============================================================================
+def renderizar_modulo_vix_quant():
+    """
+    Captura dados em tempo real do VIX via yfinance e classifica o Regime
+    de Mercado automaticamente, retornando (vix_valor_str, filtro_pressao).
+    Caso yfinance não esteja disponível ou falhe, cai no modo manual.
+    """
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📊 Volatilidade Dinâmica (VIX)")
+
+    if HAS_YF:
+        try:
+            ticker_vix = yf.Ticker("^VIX")
+            dados_vix = ticker_vix.history(period="2d")
+            if not dados_vix.empty and len(dados_vix) >= 2:
+                vix_atual = dados_vix['Close'].iloc[-1]
+                vix_anterior = dados_vix['Close'].iloc[-2]
+                variacao_vix = ((vix_atual - vix_anterior) / vix_anterior) * 100
+
+                st.sidebar.metric(
+                    label="Índice VIX (Tempo Real)",
+                    value=f"{vix_atual:.2f}",
+                    delta=f"{variacao_vix:+.2f}%",
+                    delta_color="inverse"
+                )
+
+                if vix_atual > 20.0:
+                    regime = "🔴 SHORT GAMMA — Expansão de Volatilidade"
+                    diretriz = "Alvos esticados. Evite contra-tendência. Institucionais vendem fundos e compram topos."
+                    filtro = "Pressão Vendedora Ativa"
+                elif vix_atual < 14.0:
+                    regime = "🟢 LONG GAMMA — Contração de Volatilidade"
+                    diretriz = "Foco em reversões nas extremidades (Z-AE / Z-CE). Preço tende a respeitar canais fractais."
+                    filtro = "Pressão Compradora Ativa"
+                else:
+                    regime = "🟡 TRANSIÇÃO — Gama Neutro"
+                    diretriz = "Aguarde o teste das fronteiras ou o rompimento definitivo do ER."
+                    filtro = "Regime de Neutralidade / Lateral"
+
+                st.sidebar.info(f"**Regime:** {regime}\n\n**Diretriz:** {diretriz}")
+                return f"{vix_atual:.2f}", filtro
+        except Exception:
+            pass
+
+    # Modo manual (fallback sem yfinance ou sem conexão)
+    st.sidebar.caption("⚠️ VIX automático indisponível. Insira manualmente:")
+    vix_manual = st.sidebar.text_input("Índice VIX (Manual)", "15.40")
+    filtro_manual = st.sidebar.selectbox(
+        "Regime VIX Manual",
+        ["Regime de Neutralidade / Lateral", "Pressão Vendedora Ativa", "Pressão Compradora Ativa"]
+    )
+    return vix_manual, filtro_manual
+
+
+# =============================================================================
+# MÓDULO BOLETIM BLINDADO — TEMPLATE AUXILIAR SEM FONTES EXPOSTAS
+# =============================================================================
+def obter_template_boletim_blindado(dados, vix_valor, pressao):
+    """
+    Retorna um texto base para o boletim 100% blindado,
+    sem expor nenhuma fonte de dados de varejo.
+    Usado como seed/texto inicial quando a IA não está disponível.
+    """
+    data_atual = datetime.date.today().strftime("%d/%m/%Y")
+    try:
+        er_v  = float(str(dados.get('er', 0)).replace('$','').replace(',',''))
+        zce_v = float(str(dados.get('z_ce', 0)).replace('$','').replace(',',''))
+        zae_v = float(str(dados.get('z_ae', 0)).replace('$','').replace(',',''))
+        alfa_v= float(str(dados.get('alfa', 0)).replace('$','').replace(',',''))
+        omega_v=float(str(dados.get('omega', 0)).replace('$','').replace(',',''))
+        vix_f = float(str(vix_valor).replace(',','.'))
+    except Exception:
+        er_v=zce_v=zae_v=alfa_v=omega_v=vix_f=0.0
+
+    texto = f"""[PT]
+## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE
+O ativo USTEC opera sob o Eixo de Rotação (ER) posicionado em ${er_v:,.2f}, que atua como o divisor de águas algorítmico da sessão. A sustentação acima deste nível valida a busca por liquidez na Z-CE (${zce_v:,.2f}). A quebra do ER desloca o fluxo vendedor rumo à Z-AE (${zae_v:,.2f}). Métrica de Volatilidade (VIX): {vix_f:.2f} — Filtro de Pressão Sistêmica: {pressao}.
+
+## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM
+Fronteira Alfa (${alfa_v:,.2f}) e Fronteira Ômega (${omega_v:,.2f}) definem os extremos estatísticos. Rejeições nessas extremidades com Velas de Absorção Crítica oferecem janelas de alta assimetria matemática.
+
+## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA
+- Acima do ER: Priorizar absorção compradora em retornos técnicos. Alvo: Z-CE (${zce_v:,.2f}).
+- Abaixo do ER: Mapear exaustão de repiques. Alvo: Z-AE (${zae_v:,.2f}).
+- Gerenciamento de Risco: Relação mínima de 1:2 de Payoff em todas as estruturas.
+
+## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO (ATENÇÃO ASSINANTE)
+📌 PONTOS CRÍTICOS PARA INSERIR NO SEU GRÁFICO (TRADINGVIEW/METATRADER):
+- 🟡 LINHA AMARELA: ER em ${er_v:,.2f} — Divisor de águas.
+- 🔴 LINHA VERMELHA: Z-CE em ${zce_v:,.2f} — Teto institucional.
+- 🟢 LINHA VERDE: Z-AE em ${zae_v:,.2f} — Piso institucional.
+- 🟣 LINHAS ROXAS TRACEJADAS: Alfa ${alfa_v:,.2f} e Ômega ${omega_v:,.2f}.
+
+[EN]
+## 🔒 1. PRICE REGIME AND VOLATILITY ARCHITECTURE
+The asset USTEC operates under the Rotation Axis (ER) at ${er_v:,.2f}. Sustained price above this level validates the Z-CE target (${zce_v:,.2f}). Break below ER shifts flow toward Z-AE (${zae_v:,.2f}). Volatility Index (VIX): {vix_f:.2f} — Systemic Pressure Filter: {pressao}.
+
+## ⚔️ 2. EXHAUSTION ZONES & ARBITRAGE VECTORS
+Alpha Frontier (${alfa_v:,.2f}) and Omega Frontier (${omega_v:,.2f}) define statistical extremes. Rejections at these boundaries with Critical Absorption Candles offer high-asymmetry windows.
+
+## 🛡️ 3. EXECUTION RULES & ASYMMETRY
+- Above ER: Prioritize long absorption setups targeting Z-CE (${zce_v:,.2f}).
+- Below ER: Map short exhaustion setups targeting Z-AE (${zae_v:,.2f}).
+- Risk Management: Minimum 1:2 Payoff ratio on all setups.
+
+## 🎯 4. CHART MAPPING GUIDE (SUBSCRIBER ATTENTION)
+📌 CRITICAL POINTS TO MAP ON YOUR CHART:
+- 🟡 YELLOW LINE: ER at ${er_v:,.2f} — Session equilibrium.
+- 🔴 RED LINE: Z-CE at ${zce_v:,.2f} — Institutional ceiling.
+- 🟢 GREEN LINE: Z-AE at ${zae_v:,.2f} — Institutional floor.
+- 🟣 PURPLE DASHED: Alpha ${alfa_v:,.2f} & Omega ${omega_v:,.2f}.
+"""
+    return texto
+
+
+# =============================================================================
+# MÓDULO CARROSSEL PREMIUM — PREVIEW HTML PARA REDES SOCIAIS
+# =============================================================================
+def renderizar_card_carrossel_instagram(dados_ui, pressao):
+    """
+    Renderiza um preview visual estilo Carrossel Minimalista Institucional
+    diretamente no app, pronto para print/screenshot e publicação no Instagram.
+    Recebe um dict com keys: er, z_ce, z_ae, alfa, omega (valores numéricos).
+    """
+    st.markdown("---")
+    st.subheader("📱 Preview do Carrossel Minimalista (Instagram / Redes Sociais)")
+    st.caption("Tire um print de cada slide abaixo para publicar no seu Instagram como carrossel.")
+
+    card_style = """
+    <style>
+    .carrossel-wrapper { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+    .carrossel-container {
+        background-color: #0b0f19;
+        border: 2px solid #1e293b;
+        border-radius: 12px;
+        padding: 40px;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #f8fafc;
+        width: 360px;
+        min-height: 420px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+        position: relative;
+    }
+    .c-brand { font-size: 10px; text-transform: uppercase; letter-spacing: 4px; color: #38bdf8; font-weight: 700; margin-bottom: 24px; }
+    .c-title { font-size: 24px; font-weight: 800; line-height: 1.2; color: #ffffff; margin-bottom: 6px; }
+    .c-sub   { font-size: 12px; color: #94a3b8; margin-bottom: 32px; }
+    .c-cta   { font-size: 11px; color: #38bdf8; font-weight: 600; margin-top: 48px; }
+    .c-metric { border-left: 3px solid #eab308; padding-left: 14px; margin-bottom: 18px; }
+    .c-label  { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; }
+    .c-value  { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+    .c-badge  { display:inline-block; padding:4px 10px; border-radius:4px; font-size:9px; font-weight:700;
+                text-transform:uppercase; letter-spacing:1px; background:#1e293b; color:#38bdf8; margin-top:16px; }
+    .c-footer { position: absolute; bottom: 24px; left: 40px; right: 40px; border-top: 1px solid #1e293b;
+                padding-top: 12px; font-size: 9px; color: #64748b;
+                display:flex; justify-content:space-between; }
+    </style>
+    """
+    st.markdown(card_style, unsafe_allow_html=True)
+
+    st.markdown("**🃏 Slide 1 — Capa (Gancho)**")
+    st.markdown("""
+    <div class="carrossel-container">
+        <div class="c-brand">GenilTrader [▲] — Institutional Quant Engine</div>
+        <div class="c-title">MAPEAMENTO<br>QUANTITATIVO<br>DO DIA</div>
+        <div class="c-sub">As Zonas de Liquidez Executiva da Sessão</div>
+        <div class="c-cta">ARRASTE PARA O LADO ➔</div>
+        <div class="c-footer">
+            <span>© GenilTrader Inc.</span>
+            <span>Acesse o Relatório Completo [▲]</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**🃏 Slide 2 — Níveis Técnicos**")
+    st.markdown(f"""
+    <div class="carrossel-container">
+        <div class="c-brand">USTEC // ARQUITETURA DIÁRIA</div>
+
+        <div class="c-metric" style="border-left-color:#eab308;">
+            <div class="c-label">ER — Eixo de Rotação</div>
+            <div class="c-value">{dados_ui.get('er','—')}</div>
+        </div>
+
+        <div class="c-metric" style="border-left-color:#ef4444;">
+            <div class="c-label">Z-CE — Teto de Contração</div>
+            <div class="c-value">{dados_ui.get('z_ce','—')}</div>
+        </div>
+
+        <div class="c-metric" style="border-left-color:#22c55e;">
+            <div class="c-label">Z-AE — Piso de Absorção</div>
+            <div class="c-value">{dados_ui.get('z_ae','—')}</div>
+        </div>
+
+        <span class="c-badge">Viés: {pressao}</span>
+
+        <div class="c-footer">
+            <span>Relatório Completo no Canal [▲]</span>
+            <span>GenilTrader</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("**🃏 Slide 3 — Fronteiras de Volatilidade**")
+    st.markdown(f"""
+    <div class="carrossel-container">
+        <div class="c-brand">FRONTEIRAS ESTATÍSTICAS DA SESSÃO</div>
+
+        <div class="c-metric" style="border-left-color:#a855f7;">
+            <div class="c-label">Fronteira Alfa — Máxima de Volatilidade</div>
+            <div class="c-value">{dados_ui.get('alfa','—')}</div>
+        </div>
+
+        <div class="c-metric" style="border-left-color:#a855f7;">
+            <div class="c-label">Fronteira Ômega — Mínima de Volatilidade</div>
+            <div class="c-value">{dados_ui.get('omega','—')}</div>
+        </div>
+
+        <div class="c-metric" style="border-left-color:#06b6d4;">
+            <div class="c-label">VJE — Vetor de Janelas Estruturais</div>
+            <div class="c-value">{dados_ui.get('vje','—')}</div>
+        </div>
+
+        <div class="c-footer">
+            <span>Siga para o Relatório Completo</span>
+            <span>[▲]</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>")
+    st.info("💡 **Como publicar:** Tire um print de cada slide acima e publique sequencialmente no Instagram como Carrossel. Mantenha o fundo escuro do app para máximo impacto visual.")
+
 
 # -----------------------------------------------------------------------------
 # MÓDULO 1: SNAPSHOT DIÁRIO COM TIMESTAMP
@@ -750,7 +994,8 @@ s_er_in   = st.sidebar.text_input(f"{ativo_p2} — ER", "$5,710.00")
 
 st.sidebar.subheader("📺 Variáveis Macroeconômicas")
 vetor_macro_pt = st.sidebar.selectbox("Filtro de Pressão (PT)", ["Regime de Neutralidade / Lateral", "Pressão Vendedora Ativa", "Pressão Compradora Ativa"])
-vix_val_in = st.sidebar.text_input("Índice VIX (Volatilidade/Medo)", "15.40")
+# VIX Automático via yfinance — cai no manual se sem conexão
+vix_val_in, _vix_filtro_auto = renderizar_modulo_vix_quant()
 
 st.sidebar.markdown("---")
 bt_processar = st.sidebar.button("🔥 EMITIR BOLETINS INTERNACIONAIS", use_container_width=True)
@@ -998,7 +1243,18 @@ with tab_analise:
                     use_container_width=True
                 )
 
-    if bt_processar:
+    # CARROSSEL PREMIUM HTML PARA INSTAGRAM (Pré-visualização interativa)
+    dados_carrossel = {
+        "er":    u_er_in,
+        "z_ce":  u_zce_in,
+        "z_ae":  u_zae_in,
+        "alfa":  u_alfa_in if u_alfa_in else "N/A",
+        "omega": u_omega_in if u_omega_in else "N/A",
+        "vje":   vje_ipda_in if vje_ipda_in else "N/A"
+    }
+    renderizar_card_carrossel_instagram(dados_carrossel, pressao=vetor_macro_pt)
+
+if bt_processar:
         if not analise_texto.strip():
             st.error("⚠️ Insira ou gere o texto da análise antes de emitir os boletins!")
         else:
