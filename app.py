@@ -14,10 +14,14 @@ except ImportError:
     HAS_YF = False
 
 # Importação condicional do ReportLab para PDF
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    HAS_REPORTLAB = True
+except ImportError:
+    HAS_REPORTLAB = False
 
 # Importação da SDK do Google GenAI para IA Multimodal (Gemini Free API)
 try:
@@ -111,26 +115,7 @@ st.markdown("""
         box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3) !important;
     }
     
-    /* Textareas e Inputs */
     textarea { font-family: 'Inter', monospace !important; font-size: 13px !important; border-radius: 8px !important; }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 1px solid #1E293B;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 42px;
-        border-radius: 6px;
-        padding: 0 16px;
-        font-size: 13px;
-        font-weight: 500;
-        color: #94A3B8;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: rgba(212, 175, 55, 0.1) !important;
-        color: #D4AF37 !important;
-        font-weight: 600;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -145,11 +130,6 @@ st.markdown("""
 # CONVERSOR INTERNO SIGILOSO CORRIGIDO (DERIVATIVOS -> CFDs OPERADOS)
 # -----------------------------------------------------------------------------
 def converter_dados_coleta_para_cfd(ativo_alvo, spot_in, zce_in, zae_in, er_in, alfa_in, omega_in, ratio_custom=None):
-    """
-    Mapeia e converte valores coletados dos dados originais para a escala
-    exata dos ativos que efetivamente operamos (USTEC, US500, etc.),
-    corrigindo distorções de escala que forçam o app a travar nos 20k-29k pontos.
-    """
     try:
         spot = float(str(spot_in).replace('$', '').replace(',', ''))
         zce  = float(str(zce_in).replace('$', '').replace(',', ''))
@@ -163,11 +143,7 @@ def converter_dados_coleta_para_cfd(ativo_alvo, spot_in, zce_in, zae_in, er_in, 
     if ratio_custom and ratio_custom > 0:
         factor = ratio_custom
     elif "USTEC" in ativo_alvo or "NQ" in ativo_alvo or "QQQ" in ativo_alvo:
-        # Correção Dinâmica: Se o spot está na casa dos 500-600 (escala do ETF), multiplica para bater na casa real dos 30 mil pontos
-        if spot < 1000:
-            factor = 54.0 if spot > 550 else 40.0
-        else:
-            factor = 1.0
+        factor = 54.0 if spot < 1000 else 1.0
     elif "US500" in ativo_alvo or "ES" in ativo_alvo or "SPY" in ativo_alvo:
         factor = 10.0 if spot < 1000 else 1.0
     else:
@@ -207,23 +183,18 @@ def renderizar_modulo_vix_quant():
 
                 if vix_atual > 20.0:
                     regime = "🔴 SHORT GAMMA — Expansão de Volatilidade"
-                    diretriz = "Alvos esticados. Evite contra-tendência. Institucionais vendem fundos e compram topos."
                     filtro = "Pressão Vendedora Ativa"
                 elif vix_atual < 14.0:
                     regime = "🟢 LONG GAMMA — Contração de Volatilidade"
-                    diretriz = "Foco em reversões nas extremidades (Z-AE / Z-CE). Preço tende a respeitar canais fractais."
                     filtro = "Pressão Compradora Ativa"
                 else:
                     regime = "🟡 TRANSIÇÃO — Gama Neutro"
-                    diretriz = "Aguarde o teste das fronteiras ou o rompimento definitivo do ER."
                     filtro = "Regime de Neutralidade / Lateral"
 
-                st.sidebar.info(f"**Regime:** {regime}\n\n**Diretriz:** {diretriz}")
                 return f"{vix_atual:.2f}", filtro
         except Exception:
             pass
 
-    st.sidebar.caption("⚠️ VIX automático indisponível. Insira manualmente:")
     vix_manual = st.sidebar.text_input("Índice VIX (Manual)", "15.40")
     filtro_manual = st.sidebar.selectbox(
         "Regime VIX Manual",
@@ -235,13 +206,32 @@ def renderizar_modulo_vix_quant():
 # MÓDULO BOLETIM BLINDADO — CORREÇÃO DOS 29 MIL E EXCESSO DE ZEROS
 # =============================================================================
 def obter_template_boletim_blindado(dados, vix_valor, pressao):
-    """
-    Retorna o escopo textual perfeitamente calibrado para a escala real da Nasdaq atual,
-    removendo de vez distorções grotescas de escala nas Fronteiras e Zonas.
-    """
     data_atual = datetime.date.today().strftime("%d/%m/%Y")
     try:
         er_v  = float(str(dados.get('er', 0)).replace('$','').replace(',',''))
-        zce_v = float(str(dados.get('z_ce', 0)).replace('$','').replace(',',''))
-        zae_v = float(str(dados.get('z_ae', 0)).replace('$','').replace(',',''))
+        zce_v = float(str(dados.get('zce', 0)).replace('$','').replace(',',''))
+        zae_v = float(str(dados.get('zae', 0)).replace('$','').replace(',',''))
         
+        alfa_raw = float(str(dados.get('alfa', 0)).replace('$','').replace(',',''))
+        omega_raw = float(str(dados.get('omega', 0)).replace('$','').replace(',',''))
+        
+        alfa_v = alfa_raw / 40.0 if alfa_raw > 100000 else alfa_raw
+        omega_v = omega_raw / 40.0 if omega_raw > 100000 else omega_raw
+        vix_f = float(str(vix_valor).replace(',','.'))
+    except Exception:
+        er_v=zce_v=zae_v=alfa_v=omega_v=vix_f=0.0
+
+    texto = f"""[PT]
+## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE
+O ativo USTEC opera sob o Eixo de Rotação (ER) posicionado em ${er_v:,.2f}, que atua como o divisor de águas algorítmico da sessão. A sustentação acima deste nível valida a busca por liquidez na Z-CE (${zce_v:,.2f}). A quebra do ER desloca o fluxo vendedor rumo à Z-AE (${zae_v:,.2f}). Métrica de Volatilidade (VIX): {vix_f:.2f} — Filtro de Pressão Sistêmica: {pressao}.
+
+## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM
+Fronteira Alfa (${alfa_v:,.2f}) e Fronteira Ômega (${omega_v:,.2f}) definem os extremos estatísticos. Rejeições nessas extremidades com Velas de Absorção Crítica oferecem janelas de alta assimetria matemática.
+
+## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA
+- Acima do ER: Priorizar absorção compradora em retornos técnicos. Alvo: Z-CE (${zce_v:,.2f}).
+- Abaixo do ER: Mapear exaustão de repiques. Alvo: Z-AE (${zae_v:,.2f}).
+- Gerenciamento de Risco: Relação mínima de 1:2 de Payoff em todas as estruturas.
+
+## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO (ATENÇÃO ASSINANTE)
+📌 PONTOS CRÍTICOS PARA INSERIR NO SEU GRÁFICO (TRADINGVIEW/METATRADER):
