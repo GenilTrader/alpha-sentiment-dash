@@ -221,7 +221,7 @@ def renderizar_modulo_vix_quant():
     return vix_manual, filtro_manual
 
 # =============================================================================
-# MÓDULO BOLETIM BLINDADO — STRINGS SEGURAS TESTADAS EM INTERPRETADOR
+# MÓDULO BOLETIM BLINDADO — STRINGS TRATADAS DE FORMA SEGURA (CORRIGIDO)
 # =============================================================================
 def obter_template_boletim_blindado(dados, vix_valor, pressao):
     try:
@@ -238,5 +238,5 @@ def obter_template_boletim_blindado(dados, vix_valor, pressao):
     except Exception:
         er_v=zce_v=zae_v=alfa_v=omega_v=vix_f=0.0
 
-    txt_pt = f"## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE\\nO ativo USTEC opera sob o Eixo de Rotação (ER) posicionado em ${er_v:,.2f}, que atua como o divisor de águas algorítmico da sessão. A sustentação acima deste nível valida a busca por liquidez na Z-CE (${zce_v:,.2f}). A quebra do ER desloca o fluxo vendedor rumo à Z-AE (${zae_v:,.2f}). Métrica de Volatilidade (VIX): {vix_f:.2f} — Filtro de Pressão Sistêmica: {pressao}.\\n\\n"
-    txt_pt += f"## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM\\nFronteira Alfa (${alfa_v:,.2f}) e Fronteira Ômega (${omega_v:,.2f}) definem os extremos estatísticos. Rejeições nessas extremidades com Velas de Absorção Crítica oferecem janelas de alta assimetria matemática.\\n\\n"
+    txt_pt = f"## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE\nO ativo USTEC opera sob o Eixo de Rotação (ER) posicionado em ${er_v:,.2f}, que atua como o divisor de águas algorítmico da sessão. A sustentação acima deste nível valida a busca por liquidez na Z-CE (${zce_v:,.2f}). A quebra do ER desloca o fluxo vendedor rumo à Z-AE (${zae_v:,.2f}). Métrica de Volatilidade (VIX): {vix_f:.2f} — Filtro de Pressão Sistêmica: {pressao}.\n\n"
+    txt_pt += f"## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM\nFronteira Alfa (${alfa_v:,.2f}) e Fronteira Ômega (${omega_v:,.2f}) definem os extremos estatísticos. Rejeições nessas extremidades com Velas de Absorção Crítica oferecem janelas de alta assimetria matemática.\n\n"
