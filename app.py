@@ -203,7 +203,7 @@ def renderizar_modulo_vix_quant():
     return vix_manual, filtro_manual
 
 # =============================================================================
-# MÓDULO BOLETIM BLINDADO — CORREÇÃO DOS 29 MIL E EXCESSO DE ZEROS
+# MÓDULO BOLETIM BLINDADO — CORREÇÃO CRÍTICA DE FECHAMENTO DE STRINGS
 # =============================================================================
 def obter_template_boletim_blindado(dados, vix_valor, pressao):
     data_atual = datetime.date.today().strftime("%d/%m/%Y")
