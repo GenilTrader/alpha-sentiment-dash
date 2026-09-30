@@ -203,7 +203,7 @@ def renderizar_modulo_vix_quant():
     return vix_manual, filtro_manual
 
 # =============================================================================
-# MÓDULO BOLETIM BLINDADO — CORREÇÃO CRÍTICA DE FECHAMENTO DE STRINGS
+# MÓDULO BOLETIM BLINDADO — STRINGS TRATADAS DE FORMA SEGURA (CORRIGIDO)
 # =============================================================================
 def obter_template_boletim_blindado(dados, vix_valor, pressao):
     data_atual = datetime.date.today().strftime("%d/%m/%Y")
@@ -221,17 +221,7 @@ def obter_template_boletim_blindado(dados, vix_valor, pressao):
     except Exception:
         er_v=zce_v=zae_v=alfa_v=omega_v=vix_f=0.0
 
-    texto = f"""[PT]
-## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE
-O ativo USTEC opera sob o Eixo de Rotação (ER) posicionado em ${er_v:,.2f}, que atua como o divisor de águas algorítmico da sessão. A sustentação acima deste nível valida a busca por liquidez na Z-CE (${zce_v:,.2f}). A quebra do ER desloca o fluxo vendedor rumo à Z-AE (${zae_v:,.2f}). Métrica de Volatilidade (VIX): {vix_f:.2f} — Filtro de Pressão Sistêmica: {pressao}.
-
-## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM
-Fronteira Alfa (${alfa_v:,.2f}) e Fronteira Ômega (${omega_v:,.2f}) definem os extremos estatísticos. Rejeições nessas extremidades com Velas de Absorção Crítica oferecem janelas de alta assimetria matemática.
-
-## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA
-- Acima do ER: Priorizar absorção compradora em retornos técnicos. Alvo: Z-CE (${zce_v:,.2f}).
-- Abaixo do ER: Mapear exaustão de repiques. Alvo: Z-AE (${zae_v:,.2f}).
-- Gerenciamento de Risco: Relação mínima de 1:2 de Payoff em todas as estruturas.
-
-## 🎯 4. GUIA TÁTICO DE MARCAÇÃO NO GRÁFICO (ATENÇÃO ASSINANTE)
-📌 PONTOS CRÍTICOS PARA INSERIR NO SEU GRÁFICO (TRADINGVIEW/METATRADER):
+    # Construção linha por linha concatenada para evitar quebras de aspas triplas f-string
+    txt_pt = f"## 🔒 1. ARQUITETURA DE REGIMES DE PREÇO E VOLATILIDADE\nO ativo USTEC opera sob o Eixo de Rotação (ER) posicionado em ${er_v:,.2f}, que atua como o divisor de águas algorítmico da sessão. A sustentação acima deste nível valida a busca por liquidez na Z-CE (${zce_v:,.2f}). A quebra do ER desloca o fluxo vendedor rumo à Z-AE (${zae_v:,.2f}). Métrica de Volatilidade (VIX): {vix_f:.2f} — Filtro de Pressão Sistêmica: {pressao}.\n\n"
+    txt_pt += f"## ⚔️ 2. ZONAS DE EXAUSTÃO DIÁRIA E VETORES DE ARBITRAGEM\nFronteira Alfa (${alfa_v:,.2f}) e Fronteira Ômega (${omega_v:,.2f}) definem os extremos estatísticos. Rejeições nessas extremidades com Velas de Absorção Crítica oferecem janelas de alta assimetria matemática.\n\n"
+    txt_pt += f"## 🛡️ 3. CLÁUSULA DE EXECUÇÃO E ASSIMETRIA MATEMÁTICA\n- Acima do ER: Priorizar absorção compradora em retornos técnicos. Alvo: Z-CE (${zce_v:,.2f}).\n- Abaixo do ER: Mapear exaustão de repiques. Alvo: Z-AE (${zae_v:,.2f}).\n- Gerenciamento de Risco: Relação mínima de 1:2 de Payoff em todas as estruturas.\n\n"
